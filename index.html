@@ -47,13 +47,22 @@
                      <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Daftar Tugasku</h1>
                      <p id="user-greeting" class="text-gray-500 dark:text-gray-400 mt-2"></p>
                 </div>
-                <button id="logout-btn" class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300">Keluar</button>
+                <div class="flex items-center gap-2">
+                    <button id="manage-courses-btn" class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300">Kelola Matkul</button>
+                    <button id="logout-btn" class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300">Keluar</button>
+                </div>
             </header>
 
             <form id="task-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div>
+                <div class="sm:col-span-2">
                     <label for="task-input" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Nama Tugas</label>
-                    <input type="text" id="task-input" placeholder="Contoh: Mengerjakan esai..." class="custom-placeholder w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg transition-all duration-300">
+                    <input type="text" id="task-input" placeholder="Contoh: Mengerjakan esai..." class="custom-placeholder w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg transition-all duration-300" required>
+                </div>
+                <div>
+                    <label for="course-select" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Mata Kuliah (Opsional)</label>
+                    <select id="course-select" class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg transition-all duration-300">
+                        <option value="">-- Tanpa Mata Kuliah --</option>
+                    </select>
                 </div>
                 <div>
                     <label for="deadline-input" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Tenggat Waktu</label>
@@ -77,6 +86,28 @@
             </main>
         </div>
     </div>
+
+    <!-- Modal Kelola Mata Kuliah -->
+    <div id="course-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 opacity-0" id="course-modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Kelola Mata Kuliah</h3>
+                <button id="close-course-modal" class="p-1 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <form id="course-form" class="flex gap-2 mb-4">
+                <input type="hidden" id="course-id-input">
+                <input type="text" id="course-name-input" placeholder="Contoh: Kalkulus" class="custom-placeholder w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg border-2 border-transparent focus:border-blue-500 focus:ring-0" required>
+                <button type="submit" id="course-submit-btn" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 whitespace-nowrap">Tambah</button>
+            </form>
+            <h4 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">Daftar Mata Kuliah</h4>
+            <ul id="course-list" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                <!-- Daftar mata kuliah akan muncul di sini -->
+            </ul>
+        </div>
+    </div>
+
 
     <!-- Firebase SDK -->
     <script type="module">
@@ -110,26 +141,37 @@
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const userGreeting = document.getElementById('user-greeting');
-        
         const taskForm = document.getElementById('task-form');
         const taskInput = document.getElementById('task-input');
         const deadlineInput = document.getElementById('deadline-input');
         const taskList = document.getElementById('task-list');
         const completedTaskList = document.getElementById('completed-task-list');
         
+        // Elemen DOM untuk Mata Kuliah
+        const manageCoursesBtn = document.getElementById('manage-courses-btn');
+        const courseModal = document.getElementById('course-modal');
+        const courseModalContent = document.getElementById('course-modal-content');
+        const closeCourseModalBtn = document.getElementById('close-course-modal');
+        const courseForm = document.getElementById('course-form');
+        const courseIdInput = document.getElementById('course-id-input');
+        const courseNameInput = document.getElementById('course-name-input');
+        const courseSubmitBtn = document.getElementById('course-submit-btn');
+        const courseList = document.getElementById('course-list');
+        const courseSelect = document.getElementById('course-select');
+
         // Atur tanggal default ke hari ini
         const setDefaultDate = () => {
             const today = new Date();
-            // Menyesuaikan dengan zona waktu lokal untuk mendapatkan tanggal yang benar
             today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
             deadlineInput.value = today.toISOString().split('T')[0];
         };
         setDefaultDate();
 
         let currentUserId = null;
-        let unsubscribeTasks = null; // Untuk menghentikan listener saat logout
+        let unsubscribeTasks = null; 
+        let unsubscribeCourses = null;
 
-        // Logika Autentikasi
+        // --- Logika Autentikasi ---
         loginBtn.addEventListener('click', () => {
             signInWithPopup(auth, provider).catch(error => console.error("Error signing in:", error));
         });
@@ -138,86 +180,73 @@
             signOut(auth).catch(error => console.error("Error signing out:", error));
         });
 
-        // Pantau perubahan status autentikasi
         onAuthStateChanged(auth, user => {
             if (user) {
-                // Pengguna masuk
                 currentUserId = user.uid;
                 userGreeting.textContent = `Hai, ${user.displayName}!`;
                 loginContainer.style.display = 'none';
                 appContainer.style.display = 'block';
                 loadTasksFromFirestore(currentUserId);
+                loadCoursesFromFirestore(currentUserId);
             } else {
-                // Pengguna keluar
                 currentUserId = null;
                 loginContainer.style.display = 'block';
                 appContainer.style.display = 'none';
-                if (unsubscribeTasks) unsubscribeTasks(); // Hentikan listener
+                if (unsubscribeTasks) unsubscribeTasks();
+                if (unsubscribeCourses) unsubscribeCourses();
                 taskList.innerHTML = '';
                 completedTaskList.innerHTML = '';
             }
         });
         
-        // --- Logika Firestore ---
-
-        // Menambah tugas baru
+        // --- Logika Tugas (Tasks) ---
         taskForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const taskText = taskInput.value.trim();
             const deadline = deadlineInput.value;
+            const course = courseSelect.value;
             if (taskText !== '' && currentUserId) {
                 addDoc(collection(db, "users", currentUserId, "tasks"), {
                     text: taskText,
                     isCompleted: false,
                     deadline: deadline || null,
-                    createdAt: serverTimestamp() // Gunakan timestamp server
+                    course: course || null,
+                    createdAt: serverTimestamp()
                 }).then(() => {
-                    taskInput.value = '';
-                    setDefaultDate(); // Reset tanggal ke hari ini setelah submit
+                    taskForm.reset();
+                    setDefaultDate();
                 }).catch(error => console.error("Error adding document: ", error));
             }
         });
 
-        // Memuat tugas dari Firestore secara real-time
         function loadTasksFromFirestore(userId) {
             if (unsubscribeTasks) unsubscribeTasks();
-            
             const tasksRef = collection(db, "users", userId, "tasks");
             const q = query(tasksRef, orderBy("createdAt", "desc"));
-
             unsubscribeTasks = onSnapshot(q, (snapshot) => {
-                taskList.innerHTML = ''; // Kosongkan list sebelum render ulang
+                taskList.innerHTML = '';
                 completedTaskList.innerHTML = '';
-
                 let activeTasksCount = 0;
                 let completedTasksCount = 0;
 
                 snapshot.docs.forEach(doc => {
                     renderTask(doc.id, doc.data());
-                    if (doc.data().isCompleted) {
-                        completedTasksCount++;
-                    } else {
-                        activeTasksCount++;
-                    }
+                    if (doc.data().isCompleted) completedTasksCount++;
+                    else activeTasksCount++;
                 });
                 
                 if(activeTasksCount === 0) taskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada tugas. Hebat!</li>`;
                 if(completedTasksCount === 0) completedTaskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada tugas yang selesai.</li>`;
-
-            }, (error) => {
-                console.error("Error fetching tasks: ", error);
             });
         }
         
-        // Merender satu elemen tugas
         function renderTask(id, data) {
             const li = document.createElement('li');
             li.className = 'task-item flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg shadow-sm';
             li.dataset.id = id;
 
             const creationDate = data.createdAt ? data.createdAt.toDate() : new Date();
-            const formattedTimestamp = `Dibuat: ${creationDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-            
+            const formattedTimestamp = `Dibuat: ${creationDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
             let deadlineHTML = '';
             if (data.deadline) {
                 const deadlineDate = new Date(data.deadline);
@@ -230,8 +259,9 @@
                 <div class="flex items-start gap-3 flex-grow min-w-0">
                     <input type="checkbox" class="custom-checkbox mt-1" ${data.isCompleted ? 'checked' : ''}>
                     <div class="task-details-wrapper flex-grow min-w-0">
+                        ${data.course ? `<span class="block text-xs font-bold text-blue-600 dark:text-blue-400 mb-1">${data.course}</span>` : ''}
                         <p class="task-text ${data.isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'} break-words">${data.text}</p>
-                        <div class="metadata-wrapper flex flex-col sm:flex-row sm:items-center sm:gap-4 mt-1 text-xs text-gray-400 dark:text-gray-500">
+                        <div class="metadata-wrapper flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-gray-400 dark:text-gray-500">
                             <span>${formattedTimestamp}</span>
                             ${deadlineHTML}
                         </div>
@@ -244,11 +274,9 @@
                 </div>
             `;
             
-            if (data.isCompleted) {
-                completedTaskList.appendChild(li);
-            } else {
-                taskList.appendChild(li);
-            }
+            if (data.isCompleted) completedTaskList.appendChild(li);
+            else taskList.appendChild(li);
+            
             addEventListenersToTask(li);
         }
         
@@ -257,52 +285,133 @@
             const checkbox = taskItem.querySelector('input[type="checkbox"]');
             const deleteBtn = taskItem.querySelector('.delete-btn');
             
-            // Perbarui status selesai/belum
             checkbox.addEventListener('change', () => {
-                const taskRef = doc(db, "users", currentUserId, "tasks", docId);
-                updateDoc(taskRef, {
-                    isCompleted: checkbox.checked
-                }).catch(error => console.error("Error updating completion status: ", error));
+                updateDoc(doc(db, "users", currentUserId, "tasks", docId), { isCompleted: checkbox.checked });
             });
-
-            // Hapus tugas
             deleteBtn.addEventListener('click', () => {
-                // Menggunakan dialog kustom sebagai ganti confirm()
                 const taskText = taskItem.querySelector('.task-text').textContent;
                 showCustomConfirm(`Apakah Anda yakin ingin menghapus tugas "${taskText}"?`, () => {
-                    const taskRef = doc(db, "users", currentUserId, "tasks", docId);
-                    deleteDoc(taskRef).catch(error => console.error("Error deleting document: ", error));
+                    deleteDoc(doc(db, "users", currentUserId, "tasks", docId));
                 });
             });
         }
 
+        // --- Logika Mata Kuliah (Courses) ---
+        manageCoursesBtn.addEventListener('click', () => {
+            courseModal.classList.remove('hidden');
+            setTimeout(() => { 
+                courseModal.classList.add('opacity-100');
+                courseModalContent.classList.add('scale-100', 'opacity-100');
+                courseModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        });
+        
+        function closeCourseModal() {
+            courseModalContent.classList.remove('scale-100', 'opacity-100');
+            courseModalContent.classList.add('scale-95', 'opacity-0');
+            courseModal.classList.remove('opacity-100');
+            setTimeout(() => {
+                courseModal.classList.add('hidden');
+                courseForm.reset();
+                courseIdInput.value = '';
+                courseSubmitBtn.textContent = 'Tambah';
+            }, 300);
+        }
+
+        closeCourseModalBtn.addEventListener('click', closeCourseModal);
+        courseModal.addEventListener('click', (e) => {
+            if (e.target === courseModal) closeCourseModal();
+        });
+        
+        courseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const courseName = courseNameInput.value.trim();
+            const courseId = courseIdInput.value;
+            if (courseName && currentUserId) {
+                if (courseId) {
+                    updateDoc(doc(db, "users", currentUserId, "courses", courseId), { name: courseName });
+                } else {
+                    addDoc(collection(db, "users", currentUserId, "courses"), { name: courseName });
+                }
+                courseForm.reset();
+                courseIdInput.value = '';
+                courseSubmitBtn.textContent = 'Tambah';
+                courseNameInput.focus();
+            }
+        });
+
+        function loadCoursesFromFirestore(userId) {
+            if (unsubscribeCourses) unsubscribeCourses();
+            const coursesRef = collection(db, "users", userId, "courses");
+            const q = query(coursesRef, orderBy("name"));
+            unsubscribeCourses = onSnapshot(q, (snapshot) => {
+                courseList.innerHTML = '';
+                courseSelect.innerHTML = '<option value="">-- Tanpa Mata Kuliah --</option>';
+                snapshot.docs.forEach(doc => {
+                    renderCourseToList(doc.id, doc.data());
+                    addCourseToSelect(doc.id, doc.data());
+                });
+            });
+        }
+
+        function renderCourseToList(id, data) {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700/60 rounded-md';
+            li.dataset.id = id;
+            li.innerHTML = `
+                <span class="course-name-text text-gray-800 dark:text-gray-200">${data.name}</span>
+                <div class="flex gap-2">
+                    <button class="edit-course-btn p-1 text-gray-500 hover:text-blue-500 font-semibold text-sm">Ubah</button>
+                    <button class="delete-course-btn p-1 text-gray-500 hover:text-red-500 font-semibold text-sm">Hapus</button>
+                </div>
+            `;
+            courseList.appendChild(li);
+
+            li.querySelector('.edit-course-btn').addEventListener('click', () => {
+                courseIdInput.value = id;
+                courseNameInput.value = data.name;
+                courseSubmitBtn.textContent = 'Simpan';
+                courseNameInput.focus();
+            });
+
+            li.querySelector('.delete-course-btn').addEventListener('click', () => {
+                showCustomConfirm(`Yakin ingin menghapus mata kuliah "${data.name}"? Ini tidak akan menghapus tugas yang sudah ada.`, () => {
+                    deleteDoc(doc(db, "users", currentUserId, "courses", id));
+                });
+            });
+        }
+
+        function addCourseToSelect(id, data) {
+            const option = document.createElement('option');
+            option.value = data.name;
+            option.textContent = data.name;
+            courseSelect.appendChild(option);
+        }
+
+        // --- Fungsi Utilitas ---
         function showCustomConfirm(message, onConfirm) {
-            // Hapus modal lama jika ada
             const oldModal = document.getElementById('custom-confirm-modal');
             if (oldModal) oldModal.remove();
-
-            // Buat elemen modal
             const modal = document.createElement('div');
             modal.id = 'custom-confirm-modal';
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50';
             modal.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
-                    <p class="text-gray-800 dark:text-gray-200 mb-4">${message}</p>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm text-center transform transition-all scale-95 opacity-0" id="confirm-modal-content">
+                    <p class="text-gray-800 dark:text-gray-200 mb-6">${message}</p>
                     <div class="flex justify-center gap-4">
-                        <button id="confirm-cancel" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">Batal</button>
-                        <button id="confirm-ok" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Hapus</button>
+                        <button id="confirm-cancel" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 font-semibold">Batal</button>
+                        <button id="confirm-ok" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold">Hapus</button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
+            setTimeout(() => {
+                document.getElementById('confirm-modal-content').classList.add('scale-100', 'opacity-100');
+                document.getElementById('confirm-modal-content').classList.remove('scale-95', 'opacity-0');
+            }, 10);
 
-            document.getElementById('confirm-ok').onclick = () => {
-                onConfirm();
-                modal.remove();
-            };
-            document.getElementById('confirm-cancel').onclick = () => {
-                modal.remove();
-            };
+            document.getElementById('confirm-ok').onclick = () => { onConfirm(); modal.remove(); };
+            document.getElementById('confirm-cancel').onclick = () => { modal.remove(); };
         }
     </script>
 </body>
