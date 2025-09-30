@@ -202,7 +202,9 @@
         // --- Logika Tugas (Tasks) ---
         taskForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const taskText = taskInput.value.trim();
+            // --- MENJADI SEPERTI INI ---
+            const rawTaskText = taskInput.value.trim();
+            const taskText = rawTaskText.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
             const deadline = deadlineInput.value;
             const course = courseSelect.value;
             if (taskText !== '' && currentUserId) {
@@ -416,3 +418,4 @@
     </script>
 </body>
 </html>
+
