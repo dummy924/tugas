@@ -3,465 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dompet Waktu - Kelola Uangmu, Kendalikan Waktumu</title>
+    <title>Aplikasi Daftar Tugas Kuliah</title>
+    <!-- Memuat Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #F0EBE3;
-            color: #574B42;
+        body { font-family: 'Inter', sans-serif; }
+        .custom-placeholder::placeholder { color: #9ca3af; opacity: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .task-item, .login-container { animation: fadeIn 0.5s ease-out; }
+        .custom-checkbox {
+            -webkit-appearance: none; appearance: none; background-color: transparent; width: 1.25rem; height: 1.25rem;
+            border: 2px solid #4b5563; border-radius: 0.25rem; cursor: pointer; display: inline-block; position: relative; flex-shrink: 0;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        .custom-checkbox:checked { background-color: #3b82f6; border-color: #3b82f6; }
+        .custom-checkbox:checked::after {
+            content: '✔'; font-size: 0.9rem; color: white; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
         }
-        .btn-primary {
-            background-color: #7D6E63;
-            color: #FFFFFF;
-            transition: background-color 0.3s ease;
-        }
-        .btn-primary:hover {
-            background-color: #574B42;
-        }
-        .btn-secondary {
-            background-color: #E4DCCF;
-            color: #574B42;
-            transition: background-color 0.3s ease;
-        }
-        .btn-secondary:hover {
-            background-color: #C8BBAE;
-        }
-        .progress-bar-container {
-            background-color: #E4DCCF;
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-        .progress-bar {
-            background-color: #7D6E63;
-            transition: width 0.5s ease-in-out;
-        }
-        /* Custom slider thumb */
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #7D6E63;
-            cursor: pointer;
-            border-radius: 50%;
-            border: 2px solid white;
-            margin-top: -6px;
-        }
-        input[type=range]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: #7D6E63;
-            cursor: pointer;
-            border-radius: 50%;
-            border: 2px solid white;
-        }
+        /* Sembunyikan elemen secara default */
+        .hidden-by-default { display: none; }
     </style>
 </head>
-<body class="min-h-screen p-4 sm:p-6 lg:p-8">
-    <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl sm:text-5xl font-bold text-[#574B42]">Dompet Waktu</h1>
-            <p class="text-lg mt-2 text-[#7D6E63]">Kelola uangmu, kendalikan waktumu. Setiap keputusan finansial menentukan detak Jam Kehidupanmu.</p>
-        </header>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex items-center justify-center p-4 transition-colors duration-300">
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Kolom Kiri: Jam Kehidupan & Alokasi -->
-            <div class="lg:col-span-2 space-y-8">
-                <!-- Jam Kehidupan -->
-                <section id="jam-kehidupan" class="glass-card p-6 rounded-2xl shadow-lg text-center">
-                    <h2 class="text-2xl font-bold mb-4">Jam Kehidupan</h2>
-                    <div class="flex justify-center items-center gap-4 mb-4">
-                        <!-- Ikon Jam Pasir -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-hourglass-split text-[#7D6E63]" viewBox="0 0 16 16">
-                          <path d="M2.5 15a.5.5 0 1 1 0-1h11a.5.5 0 0 1 0 1h-11zm2-14v5.372c0 .218.044.435.13.628l.258.575a.5.5 0 0 1-.44.696h-2.996a.5.5 0 0 1-.44-.696L3.87 6c.086-.193.13-.41.13-.628V1h1.5zm1 0v5.372c0 .218.044.435.13.628l.258.575a.5.5 0 0 1-.44.696h-2.996a.5.5 0 0 1-.44-.696L7.87 6c.086-.193.13-.41.13-.628V1h1.5zm4 0v5.372c0 .218.044.435.13.628l.258.575a.5.5 0 0 1-.44.696h-2.996a.5.5 0 0 1-.44-.696l.258-.575c.086-.193.13-.41.13-.628V1h1.5z"/>
-                        </svg>
-                        <div id="waktu-display" class="text-5xl font-bold tracking-wider text-[#574B42]">365:00:00:00</div>
-                    </div>
-                    <p class="text-sm mb-2">Sisa Waktu: <span id="waktu-sisa-teks">365 Hari, 0 Jam, 0 Menit, 0 Detik</span></p>
-                    <div class="flex items-center justify-center gap-2 text-sm">
-                        <span>Laju Waktu: <span id="laju-waktu" class="font-bold">1.0x</span></span>
-                        <span id="laju-status" class="text-green-600 font-semibold">(Bijak)</span>
-                    </div>
-                    <p class="mt-4 text-lg">Level Kehidupan: <span id="level-kehidupan" class="font-bold bg-[#7D6E63] text-white px-3 py-1 rounded-full text-sm">Pelajar</span></p>
-                </section>
-
-                <!-- Alokasi Waktu/Uang -->
-                <section id="alokasi" class="glass-card p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-bold mb-2">Alokasi Waktu (Anggaran)</h2>
-                    <p class="mb-6 text-sm">Bagilah waktumu (100%) ke dalam 4 pos ini. Pengelolaan yang baik akan memperlambat laju jam.</p>
-                    <div class="space-y-4">
-                        <!-- Kebutuhan -->
-                        <div>
-                            <label for="kebutuhan" class="flex justify-between font-semibold"><span>Kebutuhan</span> <span id="kebutuhan-val">50%</span></label>
-                            <input type="range" id="kebutuhan" min="0" max="100" value="50" class="w-full h-2 bg-[#E4DCCF] rounded-lg appearance-none cursor-pointer">
-                        </div>
-                        <!-- Keinginan -->
-                        <div>
-                            <label for="keinginan" class="flex justify-between font-semibold"><span>Keinginan</span> <span id="keinginan-val">30%</span></label>
-                            <input type="range" id="keinginan" min="0" max="100" value="30" class="w-full h-2 bg-[#E4DCCF] rounded-lg appearance-none cursor-pointer">
-                        </div>
-                        <!-- Tabungan -->
-                        <div>
-                            <label for="tabungan" class="flex justify-between font-semibold"><span>Tabungan</span> <span id="tabungan-val">10%</span></label>
-                            <input type="range" id="tabungan" min="0" max="100" value="10" class="w-full h-2 bg-[#E4DCCF] rounded-lg appearance-none cursor-pointer">
-                        </div>
-                        <!-- Investasi -->
-                        <div>
-                            <label for="investasi" class="flex justify-between font-semibold"><span>Investasi</span> <span id="investasi-val">10%</span></label>
-                            <input type="range" id="investasi" min="0" max="100" value="10" class="w-full h-2 bg-[#E4DCCF] rounded-lg appearance-none cursor-pointer">
-                        </div>
-                    </div>
-                    <div class="mt-4 text-center font-bold" id="total-alokasi">Total Alokasi: 100%</div>
-                </section>
-            </div>
-
-            <!-- Kolom Kanan: Misi & Koin -->
-            <div class="space-y-8">
-                <!-- Koin Kebijaksanaan -->
-                <section id="koin" class="glass-card p-6 rounded-2xl shadow-lg text-center">
-                    <h2 class="text-2xl font-bold mb-2">Koin Kebijaksanaan</h2>
-                    <div class="flex justify-center items-center gap-3">
-                        <!-- Ikon Koin -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-coin text-yellow-500" viewBox="0 0 16 16">
-                          <path d="M5.5 9.511c.076.954.83 1.697 2.182 1.785V12h.6v-.709c1.4-.098 2.218-.846 2.218-1.932 0-.987-.626-1.496-1.745-1.76l-.473-.091c-.432-.086-.666-.214-.666-.477 0-.247.246-.419.626-.438v-.705h-.6v.71c-.587.093-1.02.512-1.02 1.073 0 .622.504 1.03 1.254 1.135l.471.09c.432.086.666.214.666.477 0 .247-.246.419-.626.438v.705h.6v-.71c.587.093 1.02.512 1.02 1.073 0 .622-.504 1.03-1.254 1.135l-.471.09a1.42 1.42 0 0 1-1.785-1.785h-1.11zM8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                          <path d="M8 13.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11zm0 .5A6 6 0 1 0 8 2a6 6 0 0 0 0 12z"/>
-                        </svg>
-                        <span id="jumlah-koin" class="text-4xl font-bold">10</span>
-                    </div>
-                    <button id="tukar-koin-btn" class="btn-primary w-full mt-4 py-2 rounded-lg font-semibold">Tukar Koin</button>
-                </section>
-
-                <!-- Papan Misi -->
-                <section id="papan-misi" class="glass-card p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-bold mb-4">Papan Misi Harian</h2>
-                    <div id="misi-container" class="space-y-3">
-                        <!-- Misi akan dimuat di sini oleh JavaScript -->
-                    </div>
-                </section>
-            </div>
-        </main>
-    </div>
-
-    <!-- Modal Toko Kebijaksanaan -->
-    <div id="toko-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
-        <div class="bg-[#F0EBE3] rounded-2xl p-6 w-full max-w-md relative shadow-2xl">
-            <h2 class="text-2xl font-bold text-center mb-4">Toko Kebijaksanaan</h2>
-            <div id="toko-item-container" class="space-y-3 max-h-80 overflow-y-auto pr-2">
-                <!-- Item toko akan dimuat di sini -->
-            </div>
-            <button id="tutup-modal-btn" class="absolute top-3 right-3 text-2xl font-bold text-[#7D6E63]">&times;</button>
+    <div class="w-full max-w-2xl">
+        <!-- Container untuk Login -->
+        <div id="login-container" class="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Selamat Datang!</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2 mb-6">Masuk untuk mulai mengelola tugas kuliahmu.</p>
+            <button id="login-btn" class="w-full max-w-xs mx-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300 flex items-center justify-center gap-3">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><defs><path id="a" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/></defs><clipPath id="b"><use xlink:href="#a" overflow="visible"/></clipPath><path clip-path="url(#b)" fill="#FBBC05" d="M0 37V11l17 13z"/><path clip-path="url(#b)" fill="#EA4335" d="M0 11l17 13 7-6.1L48 14V0H0z"/><path clip-path="url(#b)" fill="#34A853" d="M0 37l30-23 7.9 1L48 0v48H0z"/><path clip-path="url(#b)" fill="#4285F4" d="M48 48L17 24l-4-3 35-10z"/></svg>
+                <span>Masuk dengan Google</span>
+            </button>
         </div>
-    </div>
-    
-    <!-- Modal Notifikasi -->
-    <div id="notifikasi-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl transform transition-all scale-95 opacity-0">
-            <h3 id="notifikasi-judul" class="text-2xl font-bold mb-2"></h3>
-            <p id="notifikasi-pesan" class="mb-6"></p>
-            <button id="tutup-notifikasi-btn" class="btn-primary px-6 py-2 rounded-lg font-semibold">Mengerti</button>
+
+        <!-- Container Aplikasi Utama (disembunyikan secara default) -->
+        <div id="app-container" class="hidden-by-default w-full bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-6 md:p-8">
+            <header class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="text-center sm:text-left">
+                     <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Daftar Tugasku</h1>
+                     <p id="user-greeting" class="text-gray-500 dark:text-gray-400 mt-2"></p>
+                </div>
+                <button id="logout-btn" class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300">Keluar</button>
+            </header>
+
+            <form id="task-form" class="grid grid-cols-1 sm:grid-cols-3 items-center gap-3 mb-6">
+                 <input type="text" id="task-input" placeholder="Contoh: Mengerjakan esai..." class="custom-placeholder sm:col-span-2 w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg transition-all duration-300">
+                 <input type="date" id="deadline-input" title="Atur tenggat waktu" class="custom-placeholder w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg transition-all duration-300">
+                <button type="submit" class="w-full sm:col-span-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    <span>Tambah Tugas</span>
+                </button>
+            </form>
+
+            <main>
+                <div id="active-tasks-container">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-700 pb-2">Harus Dikerjakan</h2>
+                    <ul id="task-list" class="space-y-3"></ul>
+                </div>
+                <div id="completed-tasks-container" class="mt-8">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-700 pb-2">Selesai</h2>
+                    <ul id="completed-task-list" class="space-y-3"></ul>
+                </div>
+            </main>
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import fungsi yang diperlukan dari SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- STATE APLIKASI ---
-            let totalWaktuDetik = 365 * 24 * 60 * 60; // Mulai dari 1 tahun
-            let lajuWaktu = 1.0;
-            let koinKebijaksanaan = 10;
-            let levelKehidupan = 'Pelajar';
-            let alokasi = {
-                kebutuhan: 50,
-                keinginan: 30,
-                tabungan: 10,
-                investasi: 10
-            };
+        // ===================================================================================
+        // TODO: Konfigurasi Firebase Anda dari konsol Firebase
+        // Ganti objek di bawah ini dengan konfigurasi proyek Firebase Anda sendiri.
+        // ===================================================================================
+        const firebaseConfig = {
+          apiKey: "AIzaSyDgMm-W5ix_sMuEPBSHrtd-itrPwd4ge38",
+          authDomain: "tugas-9ae0f.firebaseapp.com",
+          projectId: "tugas-9ae0f",
+          storageBucket: "tugas-9ae0f.firebasestorage.app",
+          messagingSenderId: "423988894895",
+          appId: "1:423988894895:web:917db3ef8f82a9a8d7885a",
+          measurementId: "G-48VJWMZN63"
+        };
 
-            const daftarMisi = [
-                { id: 1, teks: "Hemat Rp20.000 hari ini dari pos keinginan.", hadiahWaktu: 86400, hadiahKoin: 5, selesai: false },
-                { id: 2, teks: "Catat 3 pengeluaran tak pentingmu minggu ini.", hadiahWaktu: 43200, hadiahKoin: 3, selesai: false },
-                { id: 3, teks: "Tidak jajan kopi/boba selama 2 hari.", hadiahWaktu: 172800, hadiahKoin: 8, selesai: false },
-                { id: 4, teks: "Bandingkan harga 1 barang sebelum membeli.", hadiahWaktu: 21600, hadiahKoin: 2, selesai: false },
-                { id: 5, teks: "Masak sendiri daripada beli makan di luar.", hadiahWaktu: 64800, hadiahKoin: 4, selesai: false },
-            ];
-            let misiAktif = [];
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
 
-            const daftarItemToko = [
-                { id: 1, nama: "Tips Rahasia: Dana Darurat", deskripsi: "Cara cepat membangun dana darurat anti panik.", harga: 15, tipe: 'tips', konten: "Mulai sisihkan 5-10% dari penghasilanmu khusus untuk dana darurat. Simpan di rekening terpisah yang mudah diakses tapi tidak untuk belanja harian. Idealnya, kumpulkan 3-6 bulan pengeluaran." },
-                { id: 2, nama: "Simulasi: Motor Rusak", deskripsi: "Bagaimana jika motormu tiba-tiba rusak parah?", harga: 25, tipe: 'simulasi', konten: "Biaya perbaikan Rp1.500.000! Apakah dana daruratmu cukup? Jika tidak, kamu mungkin harus memotong pos tabungan atau bahkan berutang. Ini pentingnya dana darurat!" },
-                { id: 3, nama: "Mini Game: Investor Cilik", deskripsi: "Mainkan game sederhana tentang investasi.", harga: 30, tipe: 'game', konten: "Fitur ini sedang dalam pengembangan. Nantikan ya!" },
-                { id: 4, nama: "Tips Rahasia: Aturan 50/30/20", deskripsi: "Pelajari metode budgeting populer.", harga: 10, tipe: 'tips', konten: "Metode 50/30/20 adalah cara simpel mengalokasikan pendapatan: 50% untuk Kebutuhan (cicilan, makan), 30% untuk Keinginan (hiburan, hobi), dan 20% untuk Tabungan & Investasi." }
-            ];
+        // Elemen DOM
+        const loginContainer = document.getElementById('login-container');
+        const appContainer = document.getElementById('app-container');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userGreeting = document.getElementById('user-greeting');
+        
+        const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const deadlineInput = document.getElementById('deadline-input');
+        const taskList = document.getElementById('task-list');
+        const completedTaskList = document.getElementById('completed-task-list');
+        
+        let currentUserId = null;
+        let unsubscribeTasks = null; // Untuk menghentikan listener saat logout
 
-            // --- ELEMEN DOM ---
-            const waktuDisplay = document.getElementById('waktu-display');
-            const waktuSisaTeks = document.getElementById('waktu-sisa-teks');
-            const lajuWaktuDisplay = document.getElementById('laju-waktu');
-            const lajuStatusDisplay = document.getElementById('laju-status');
-            const levelDisplay = document.getElementById('level-kehidupan');
-            const jumlahKoinDisplay = document.getElementById('jumlah-koin');
-            const misiContainer = document.getElementById('misi-container');
-            const totalAlokasiDisplay = document.getElementById('total-alokasi');
-
-            const sliderKebutuhan = document.getElementById('kebutuhan');
-            const sliderKeinginan = document.getElementById('keinginan');
-            const sliderTabungan = document.getElementById('tabungan');
-            const sliderInvestasi = document.getElementById('investasi');
-            
-            const valKebutuhan = document.getElementById('kebutuhan-val');
-            const valKeinginan = document.getElementById('keinginan-val');
-            const valTabungan = document.getElementById('tabungan-val');
-            const valInvestasi = document.getElementById('investasi-val');
-
-            const tokoModal = document.getElementById('toko-modal');
-            const tukarKoinBtn = document.getElementById('tukar-koin-btn');
-            const tutupModalBtn = document.getElementById('tutup-modal-btn');
-            const tokoItemContainer = document.getElementById('toko-item-container');
-
-            const notifikasiModal = document.getElementById('notifikasi-modal');
-            const notifikasiJudul = document.getElementById('notifikasi-judul');
-            const notifikasiPesan = document.getElementById('notifikasi-pesan');
-            const tutupNotifikasiBtn = document.getElementById('tutup-notifikasi-btn');
-
-            // --- FUNGSI-FUNGSI ---
-
-            // Fungsi untuk format detik menjadi format Hari:Jam:Menit:Detik
-            function formatWaktu(detik) {
-                if (detik < 0) detik = 0;
-                const hari = Math.floor(detik / (3600 * 24));
-                const jam = Math.floor((detik % (3600 * 24)) / 3600);
-                const menit = Math.floor((detik % 3600) / 60);
-                const sisaDetik = Math.floor(detik % 60);
-                
-                const pad = (num) => num.toString().padStart(2, '0');
-                
-                waktuDisplay.textContent = `${hari}:${pad(jam)}:${pad(menit)}:${pad(sisaDetik)}`;
-                waktuSisaTeks.textContent = `${hari} Hari, ${jam} Jam, ${menit} Menit, ${sisaDetik} Detik`;
-            }
-
-            // Fungsi untuk update tampilan UI
-            function updateUI() {
-                formatWaktu(totalWaktuDetik);
-                jumlahKoinDisplay.textContent = koinKebijaksanaan;
-                levelDisplay.textContent = levelKehidupan;
-                lajuWaktuDisplay.textContent = `${lajuWaktu.toFixed(1)}x`;
-
-                if (lajuWaktu < 1.0) {
-                    lajuStatusDisplay.textContent = '(Bijak)';
-                    lajuStatusDisplay.className = 'font-semibold text-green-600';
-                } else if (lajuWaktu > 1.0) {
-                    lajuStatusDisplay.textContent = '(Boros)';
-                    lajuStatusDisplay.className = 'font-semibold text-red-600';
-                } else {
-                    lajuStatusDisplay.textContent = '(Normal)';
-                    lajuStatusDisplay.className = 'font-semibold text-gray-600';
-                }
-            }
-            
-            // Fungsi untuk menampilkan notifikasi
-            function tampilkanNotifikasi(judul, pesan) {
-                notifikasiJudul.textContent = judul;
-                notifikasiPesan.textContent = pesan;
-                notifikasiModal.classList.remove('hidden');
-                notifikasiModal.classList.add('flex');
-                setTimeout(() => {
-                    notifikasiModal.querySelector('div').classList.remove('scale-95', 'opacity-0');
-                }, 10);
-            }
-
-            // Fungsi untuk menyembunyikan notifikasi
-            function tutupNotifikasi() {
-                notifikasiModal.querySelector('div').classList.add('scale-95', 'opacity-0');
-                setTimeout(() => {
-                    notifikasiModal.classList.add('hidden');
-                    notifikasiModal.classList.remove('flex');
-                }, 200);
-            }
-
-            // Fungsi untuk menghitung ulang laju waktu berdasarkan alokasi
-            function hitungLajuWaktu() {
-                const { kebutuhan, keinginan, tabungan, investasi } = alokasi;
-                // Formula: Keinginan tinggi mempercepat waktu, tabungan & investasi memperlambat.
-                // Bobot keinginan lebih besar.
-                let faktorBoros = (keinginan - 30) / 20; // Jika keinginan > 30%, jadi faktor positif
-                let faktorBijak = (tabungan + investasi - 20) / 25; // Jika T+I > 20%, jadi faktor positif
-                
-                lajuWaktu = 1.0 + faktorBoros - faktorBijak;
-
-                // Batasi laju waktu agar tidak terlalu ekstrim
-                if (lajuWaktu > 2.0) lajuWaktu = 2.0;
-                if (lajuWaktu < 0.5) lajuWaktu = 0.5;
-                
-                updateUI();
-            }
-            
-            // Fungsi untuk menangani perubahan slider
-            function handleSliderChange() {
-                alokasi.kebutuhan = parseInt(sliderKebutuhan.value);
-                alokasi.keinginan = parseInt(sliderKeinginan.value);
-                alokasi.tabungan = parseInt(sliderTabungan.value);
-                alokasi.investasi = parseInt(sliderInvestasi.value);
-
-                const total = alokasi.kebutuhan + alokasi.keinginan + alokasi.tabungan + alokasi.investasi;
-                totalAlokasiDisplay.textContent = `Total Alokasi: ${total}%`;
-
-                if (total > 100) {
-                    totalAlokasiDisplay.classList.add('text-red-500');
-                } else {
-                    totalAlokasiDisplay.classList.remove('text-red-500');
-                }
-                
-                valKebutuhan.textContent = `${alokasi.kebutuhan}%`;
-                valKeinginan.textContent = `${alokasi.keinginan}%`;
-                valTabungan.textContent = `${alokasi.tabungan}%`;
-                valInvestasi.textContent = `${alokasi.investasi}%`;
-
-                if (total === 100) {
-                     hitungLajuWaktu();
-                }
-            }
-
-            // Fungsi untuk memuat misi harian
-            function muatMisi() {
-                misiContainer.innerHTML = '';
-                if (misiAktif.length === 0) {
-                    // Ambil 3 misi acak yang belum selesai
-                    const misiTersedia = daftarMisi.filter(m => !m.selesai);
-                    misiAktif = [...misiTersedia].sort(() => 0.5 - Math.random()).slice(0, 3);
-                }
-
-                if (misiAktif.length === 0) {
-                    misiContainer.innerHTML = '<p class="text-center text-sm">Semua misi telah selesai! Misi baru akan muncul besok.</p>';
-                    return;
-                }
-                
-                misiAktif.forEach(misi => {
-                    const div = document.createElement('div');
-                    div.className = 'border border-[#C8BBAE] p-3 rounded-lg';
-                    div.innerHTML = `
-                        <p class="text-sm">${misi.teks}</p>
-                        <div class="text-xs mt-2 text-[#7D6E63]">
-                            <span>Hadiah: +${misi.hadiahWaktu / 3600} jam, </span>
-                            <span>${misi.hadiahKoin} koin</span>
-                        </div>
-                        <button data-id="${misi.id}" class="btn-secondary w-full mt-2 py-1 rounded-md text-sm font-semibold btn-misi">Selesaikan Misi</button>
-                    `;
-                    misiContainer.appendChild(div);
-                });
-            }
-            
-            // Fungsi untuk menyelesaikan misi
-            function selesaikanMisi(id) {
-                const misi = daftarMisi.find(m => m.id === id);
-                if (misi && !misi.selesai) {
-                    misi.selesai = true;
-                    totalWaktuDetik += misi.hadiahWaktu;
-                    koinKebijaksanaan += misi.hadiahKoin;
-                    
-                    tampilkanNotifikasi('Misi Selesai!', `Kamu mendapatkan tambahan ${misi.hadiahWaktu / 3600} jam kehidupan dan ${misi.hadiahKoin} Koin Kebijaksanaan!`);
-                    
-                    // Hapus misi dari daftar aktif dan muat ulang
-                    misiAktif = misiAktif.filter(m => m.id !== id);
-                    muatMisi();
-                    updateUI();
-                }
-            }
-            
-            // Fungsi untuk memuat item toko
-            function muatToko() {
-                tokoItemContainer.innerHTML = '';
-                daftarItemToko.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'border border-[#C8BBAE] p-3 rounded-lg flex justify-between items-center';
-                    div.innerHTML = `
-                        <div>
-                            <h4 class="font-bold">${item.nama}</h4>
-                            <p class="text-sm">${item.deskripsi}</p>
-                        </div>
-                        <button data-id="${item.id}" class="btn-primary px-4 py-2 rounded-lg font-semibold text-sm btn-beli" ${koinKebijaksanaan < item.harga ? 'disabled' : ''}>
-                            <span class="flex items-center gap-1">
-                                ${item.harga} 
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-coin" viewBox="0 0 16 16"><path d="M5.5 9.511c.076.954.83 1.697 2.182 1.785V12h.6v-.709c1.4-.098 2.218-.846 2.218-1.932 0-.987-.626-1.496-1.745-1.76l-.473-.091c-.432-.086-.666-.214-.666-.477 0-.247.246-.419.626-.438v-.705h-.6v.71c-.587.093-1.02.512-1.02 1.073 0 .622.504 1.03 1.254 1.135l.471.09c.432.086.666.214.666.477 0 .247-.246.419-.626.438v.705h.6v-.71c.587.093 1.02.512-1.02 1.073 0 .622-.504 1.03-1.254 1.135l-.471.09a1.42 1.42 0 0 1-1.785-1.785h-1.11zM8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M8 13.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11zm0 .5A6 6 0 1 0 8 2a6 6 0 0 0 0 12z"/></svg>
-                            </span>
-                        </button>
-                    `;
-                    tokoItemContainer.appendChild(div);
-                });
-            }
-
-            // Fungsi untuk membeli item
-            function beliItem(id) {
-                const item = daftarItemToko.find(i => i.id === id);
-                if (item && koinKebijaksanaan >= item.harga) {
-                    koinKebijaksanaan -= item.harga;
-                    tokoModal.classList.add('hidden');
-                    tampilkanNotifikasi(item.nama, item.konten);
-                    updateUI();
-                } else {
-                    tampilkanNotifikasi('Koin Tidak Cukup!', 'Kumpulkan lebih banyak Koin Kebijaksanaan dengan menyelesaikan misi.');
-                }
-            }
-
-            // --- EVENT LISTENERS ---
-            [sliderKebutuhan, sliderKeinginan, sliderTabungan, sliderInvestasi].forEach(slider => {
-                slider.addEventListener('input', handleSliderChange);
-            });
-            
-            misiContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('btn-misi')) {
-                    const id = parseInt(e.target.dataset.id);
-                    selesaikanMisi(id);
-                }
-            });
-
-            tukarKoinBtn.addEventListener('click', () => {
-                muatToko();
-                tokoModal.classList.remove('hidden');
-                tokoModal.classList.add('flex');
-            });
-
-            tutupModalBtn.addEventListener('click', () => {
-                tokoModal.classList.add('hidden');
-                tokoModal.classList.remove('flex');
-            });
-            
-            tokoItemContainer.addEventListener('click', (e) => {
-                const button = e.target.closest('.btn-beli');
-                if (button) {
-                    const id = parseInt(button.dataset.id);
-                    beliItem(id);
-                }
-            });
-
-            tutupNotifikasiBtn.addEventListener('click', tutupNotifikasi);
-
-
-            // --- GAME LOOP ---
-            setInterval(() => {
-                totalWaktuDetik -= lajuWaktu;
-                if (totalWaktuDetik < 0) {
-                    totalWaktuDetik = 0;
-                    // Game Over logic bisa ditambahkan di sini
-                }
-                updateUI();
-            }, 1000);
-
-            // --- INISIALISASI ---
-            handleSliderChange();
-            muatMisi();
-            updateUI();
-            tampilkanNotifikasi('Selamat Datang di Dompet Waktu!', 'Atur alokasi anggaranmu untuk mengendalikan laju Jam Kehidupan. Selesaikan misi untuk mendapatkan hadiah. Mulailah petualangan finansialmu!');
+        // Logika Autentikasi
+        loginBtn.addEventListener('click', () => {
+            signInWithPopup(auth, provider).catch(error => console.error("Error signing in:", error));
         });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth).catch(error => console.error("Error signing out:", error));
+        });
+
+        // Pantau perubahan status autentikasi
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                // Pengguna masuk
+                currentUserId = user.uid;
+                userGreeting.textContent = `Hai, ${user.displayName}!`;
+                loginContainer.style.display = 'none';
+                appContainer.style.display = 'block';
+                loadTasksFromFirestore(currentUserId);
+            } else {
+                // Pengguna keluar
+                currentUserId = null;
+                loginContainer.style.display = 'block';
+                appContainer.style.display = 'none';
+                if (unsubscribeTasks) unsubscribeTasks(); // Hentikan listener
+                taskList.innerHTML = '';
+                completedTaskList.innerHTML = '';
+            }
+        });
+        
+        // --- Logika Firestore ---
+
+        // Menambah tugas baru
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const taskText = taskInput.value.trim();
+            const deadline = deadlineInput.value;
+            if (taskText !== '' && currentUserId) {
+                addDoc(collection(db, "users", currentUserId, "tasks"), {
+                    text: taskText,
+                    isCompleted: false,
+                    deadline: deadline || null,
+                    createdAt: serverTimestamp() // Gunakan timestamp server
+                }).then(() => {
+                    taskInput.value = '';
+                    deadlineInput.value = '';
+                }).catch(error => console.error("Error adding document: ", error));
+            }
+        });
+
+        // Memuat tugas dari Firestore secara real-time
+        function loadTasksFromFirestore(userId) {
+            if (unsubscribeTasks) unsubscribeTasks();
+            
+            const tasksRef = collection(db, "users", userId, "tasks");
+            const q = query(tasksRef, orderBy("createdAt", "desc"));
+
+            unsubscribeTasks = onSnapshot(q, (snapshot) => {
+                taskList.innerHTML = ''; // Kosongkan list sebelum render ulang
+                completedTaskList.innerHTML = '';
+
+                let activeTasksCount = 0;
+                let completedTasksCount = 0;
+
+                snapshot.docs.forEach(doc => {
+                    renderTask(doc.id, doc.data());
+                    if (doc.data().isCompleted) {
+                        completedTasksCount++;
+                    } else {
+                        activeTasksCount++;
+                    }
+                });
+                
+                if(activeTasksCount === 0) taskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada tugas. Hebat!</li>`;
+                if(completedTasksCount === 0) completedTaskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada tugas yang selesai.</li>`;
+
+            }, (error) => {
+                console.error("Error fetching tasks: ", error);
+            });
+        }
+        
+        // Merender satu elemen tugas
+        function renderTask(id, data) {
+            const li = document.createElement('li');
+            li.className = 'task-item flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg shadow-sm';
+            li.dataset.id = id;
+
+            const creationDate = data.createdAt ? data.createdAt.toDate() : new Date();
+            const formattedTimestamp = `Dibuat: ${creationDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+            
+            let deadlineHTML = '';
+            if (data.deadline) {
+                const deadlineDate = new Date(data.deadline);
+                deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
+                const formattedDeadline = deadlineDate.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+                deadlineHTML = `<span class="deadline-text font-medium text-red-500 dark:text-red-400">Tenggat: ${formattedDeadline}</span>`;
+            }
+
+            li.innerHTML = `
+                <div class="flex items-start gap-3 flex-grow min-w-0">
+                    <input type="checkbox" class="custom-checkbox mt-1" ${data.isCompleted ? 'checked' : ''}>
+                    <div class="task-details-wrapper flex-grow min-w-0">
+                        <p class="task-text ${data.isCompleted ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'} break-words">${data.text}</p>
+                        <div class="metadata-wrapper flex flex-col sm:flex-row sm:items-center sm:gap-4 mt-1 text-xs text-gray-400 dark:text-gray-500">
+                            <span>${formattedTimestamp}</span>
+                            ${deadlineHTML}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 pl-2">
+                     <button class="delete-btn p-2 text-gray-500 hover:text-red-500 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                    </button>
+                </div>
+            `;
+            
+            if (data.isCompleted) {
+                completedTaskList.appendChild(li);
+            } else {
+                taskList.appendChild(li);
+            }
+            addEventListenersToTask(li);
+        }
+        
+        function addEventListenersToTask(taskItem) {
+            const docId = taskItem.dataset.id;
+            const checkbox = taskItem.querySelector('input[type="checkbox"]');
+            const deleteBtn = taskItem.querySelector('.delete-btn');
+            
+            // Perbarui status selesai/belum
+            checkbox.addEventListener('change', () => {
+                const taskRef = doc(db, "users", currentUserId, "tasks", docId);
+                updateDoc(taskRef, {
+                    isCompleted: checkbox.checked
+                }).catch(error => console.error("Error updating completion status: ", error));
+            });
+
+            // Hapus tugas
+            deleteBtn.addEventListener('click', () => {
+                if(confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+                    const taskRef = doc(db, "users", currentUserId, "tasks", docId);
+                    deleteDoc(taskRef).catch(error => console.error("Error deleting document: ", error));
+                }
+            });
+            // Saya sengaja menghapus fungsi edit untuk menyederhanakan integrasi dengan Firebase.
+            // Menambahkannya kembali memerlukan logika UI yang lebih kompleks untuk menangani state.
+        }
     </script>
 </body>
 </html>
+
