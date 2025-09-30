@@ -73,6 +73,10 @@
                     <label for="deadline-input" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Tenggat Waktu</label>
                     <input type="date" id="deadline-input" title="Atur tenggat waktu" class="custom-placeholder w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg transition-all duration-300">
                 </div>
+                 <div class="sm:col-span-2 flex items-center gap-3">
+                    <input type="checkbox" id="public-toggle" class="custom-checkbox h-5 w-5">
+                    <label for="public-toggle" class="text-sm font-medium text-gray-700 dark:text-gray-300">Jadikan Tugas ini Publik</label>
+                </div>
                 <button type="submit" class="w-full sm:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300 flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                     <span>Tambah Tugas</span>
@@ -141,12 +145,12 @@
         // TODO: Ganti dengan Konfigurasi Firebase Anda
         // ===================================================================================
         const firebaseConfig = {
-          apiKey: "AIzaSyDgMm-W5ix_sMuEPBSHrtd-itrPwd4ge38",
-          authDomain: "tugas-9ae0f.firebaseapp.com",
-          projectId: "tugas-9ae0f",
-          storageBucket: "tugas-9ae0f.firebasestorage.app",
-          messagingSenderId: "423988894895",
-          appId: "1:423988894895:web:917db3ef8f82a9a8d7885a"
+            apiKey: "AIzaSyDgMm-W5ix_sMuEPBSHrtd-itrPwd4ge38",
+            authDomain: "tugas-9ae0f.firebaseapp.com",
+            projectId: "tugas-9ae0f",
+            storageBucket: "tugas-9ae0f.firebasestorage.app",
+            messagingSenderId: "423988894895",
+            appId: "1:423988894895:web:917db3ef8f82a9a8d7885a"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -171,6 +175,7 @@
         const taskForm = document.getElementById('task-form');
         const taskInput = document.getElementById('task-input');
         const deadlineInput = document.getElementById('deadline-input');
+        const publicToggle = document.getElementById('public-toggle');
         const taskList = document.getElementById('task-list');
         const completedTaskList = document.getElementById('completed-task-list');
         const searchInput = document.getElementById('search-input');
@@ -254,7 +259,6 @@
 
         // --- Fungsi Utama untuk Render, Pencarian, dan Urutan ---
         function updateDisplay() {
-            // 1. Filter berdasarkan pencarian
             const searchLower = currentSearchTerm.toLowerCase();
             const filteredTasks = allTasks.filter(task => {
                 const taskText = task.text.toLowerCase();
@@ -262,34 +266,24 @@
                 return taskText.includes(searchLower) || courseText.includes(searchLower);
             });
 
-            // 2. Pisahkan tugas aktif dan selesai
             let activeTasks = filteredTasks.filter(task => !task.isCompleted);
             let completedTasks = filteredTasks.filter(task => task.isCompleted);
 
-            // 3. Urutkan tugas aktif
             activeTasks.sort((a, b) => {
                 switch (currentSort) {
-                    case 'oldest':
-                        return (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0);
-                    case 'deadline-asc':
-                        return sortDeadlines(a, b, true);
-                    case 'deadline-desc':
-                        return sortDeadlines(a, b, false);
-                    case 'course-az':
-                        return (a.course || '').localeCompare(b.course || '');
-                    case 'newest':
-                    default:
-                        return (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0);
+                    case 'oldest': return (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0);
+                    case 'deadline-asc': return sortDeadlines(a, b, true);
+                    case 'deadline-desc': return sortDeadlines(a, b, false);
+                    case 'course-az': return (a.course || '').localeCompare(b.course || '');
+                    case 'newest': default: return (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0);
                 }
             });
 
-            // 4. Render semua tugas ke DOM
             taskList.innerHTML = '';
             completedTaskList.innerHTML = '';
             activeTasks.forEach(task => renderTask(task.id, task));
             completedTasks.forEach(task => renderTask(task.id, task));
 
-            // 5. Tampilkan pesan jika kosong
             if(activeTasks.length === 0) taskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Tidak ada tugas aktif.</li>`;
             if(completedTasks.length === 0) completedTaskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada tugas yang selesai.</li>`;
         }
@@ -297,11 +291,9 @@
         function sortDeadlines(a, b, ascending = true) {
             const dateA = a.deadline ? new Date(a.deadline) : null;
             const dateB = b.deadline ? new Date(b.deadline) : null;
-            
-            if (dateA && !dateB) return -1; // Tugas dengan tenggat selalu di atas
+            if (dateA && !dateB) return -1;
             if (!dateA && dateB) return 1;
-            if (!dateA && !dateB) return 0; // Keduanya tanpa tenggat, urutan tetap
-            
+            if (!dateA && !dateB) return 0;
             return ascending ? dateA - dateB : dateB - dateA;
         }
 
@@ -315,6 +307,7 @@
                 addDoc(collection(db, "users", currentUserId, "tasks"), {
                     text: taskText,
                     isCompleted: false,
+                    isPublic: publicToggle.checked,
                     deadline: deadlineInput.value || null,
                     course: courseSelect.value || null,
                     createdAt: serverTimestamp()
@@ -326,7 +319,6 @@
         });
         
         function renderTask(id, data) {
-            // Fungsi renderTask tidak berubah signifikan, hanya dipanggil oleh updateDisplay
             const li = document.createElement('li');
             li.className = 'task-item flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg shadow-sm';
             li.dataset.id = id;
@@ -339,6 +331,10 @@
                 const formattedDeadline = deadlineDate.toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
                 deadlineHTML = `<span class="deadline-text font-medium text-red-500 dark:text-red-400">Tenggat: ${formattedDeadline}</span>`;
             }
+            const publicIcon = data.isPublic
+                ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+
             li.innerHTML = `
                 <div class="flex items-start gap-3 flex-grow min-w-0">
                     <input type="checkbox" class="custom-checkbox mt-1" ${data.isCompleted ? 'checked' : ''}>
@@ -351,7 +347,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 pl-2">
+                <div class="flex items-center gap-1 pl-2">
+                     <button class="public-toggle-btn p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors duration-200" title="Ubah visibilitas">${publicIcon}</button>
                      <button class="delete-btn p-2 text-gray-500 hover:text-red-500 transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                     </button>
@@ -359,13 +356,15 @@
             `;
             const targetList = data.isCompleted ? completedTaskList : taskList;
             targetList.appendChild(li);
-            addEventListenersToTask(li);
+            addEventListenersToTask(li, data.isPublic);
         }
         
-        function addEventListenersToTask(taskItem) {
+        function addEventListenersToTask(taskItem, isPublic) {
             const docId = taskItem.dataset.id;
             const checkbox = taskItem.querySelector('input[type="checkbox"]');
             const deleteBtn = taskItem.querySelector('.delete-btn');
+            const publicToggleBtn = taskItem.querySelector('.public-toggle-btn');
+
             checkbox.addEventListener('change', () => {
                 updateDoc(doc(db, "users", currentUserId, "tasks", docId), { isCompleted: checkbox.checked });
             });
@@ -375,9 +374,12 @@
                     deleteDoc(doc(db, "users", currentUserId, "tasks", docId));
                 });
             });
+            publicToggleBtn.addEventListener('click', () => {
+                updateDoc(doc(db, "users", currentUserId, "tasks", docId), { isPublic: !isPublic });
+            });
         }
 
-        // --- Logika Mata Kuliah ---
+        // --- Logika Mata Kuliah (Tidak Berubah) ---
         manageCoursesBtn.addEventListener('click', () => { courseModal.classList.remove('hidden'); setTimeout(() => { courseModal.classList.add('opacity-100'); courseModalContent.classList.add('scale-100', 'opacity-100'); courseModalContent.classList.remove('scale-95', 'opacity-0'); }, 10); });
         function closeCourseModal() { courseModalContent.classList.remove('scale-100', 'opacity-100'); courseModalContent.classList.add('scale-95', 'opacity-0'); courseModal.classList.remove('opacity-100'); setTimeout(() => { courseModal.classList.add('hidden'); courseForm.reset(); courseIdInput.value = ''; courseSubmitBtn.textContent = 'Tambah'; }, 300); }
         closeCourseModalBtn.addEventListener('click', closeCourseModal);
