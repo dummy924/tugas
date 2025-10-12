@@ -248,18 +248,50 @@
             const tasksRef = collection(db, "users", userId, "tasks");
             const qTasks = query(tasksRef, orderBy("createdAt", "desc"));
             
-            // --- *** PERBAIKAN DI SINI *** ---
-            // Memuat Tugas dengan logika untuk migrasi data lama
             unsubscribeTasks = onSnapshot(qTasks, (snapshot) => {
-                allTasks = snapshot.docs.map(doc => {
+                const tasksFromDb = snapshot.docs.map(doc => {
                     const data = doc.data();
-                    // Jika 'status' tidak ada, buat berdasarkan 'isCompleted' lama
                     if (data.status === undefined && data.isCompleted !== undefined) {
                         data.status = data.isCompleted ? 'completed_private' : 'active';
                     }
                     return { id: doc.id, ...data };
                 });
+
+                // --- *** FITUR BARU: Cek dan proses tugas yang telat *** ---
+                // Dijalankan sebelum data ditampilkan ke pengguna
+                checkAndProcessOverdueTasks(tasksFromDb);
+
+                allTasks = tasksFromDb;
                 updateDisplay();
+            });
+        }
+
+        // --- *** FUNGSI BARU: Cek tugas yang sudah melewati tenggat *** ---
+        function checkAndProcessOverdueTasks(tasks) {
+            if (!currentUserId) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set waktu ke awal hari untuk perbandingan tanggal yang akurat
+
+            tasks.forEach(task => {
+                // Hanya proses tugas yang statusnya 'aktif' dan punya tenggat waktu
+                if (task.status === 'active' && task.deadline) {
+                    // Buat objek Date dari string 'YYYY-MM-DD'
+                    const deadlineDate = new Date(task.deadline);
+                    // Sesuaikan dengan timezone agar perbandingan akurat
+                    deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
+
+                    if (deadlineDate < today) {
+                        console.log(`Tugas "${task.text}" telah melewati tenggat. Memperbarui status.`);
+                        
+                        // Tentukan status baru berdasarkan visibilitas tugas
+                        const newStatus = task.isPublic ? 'completed_public' : 'completed_private';
+                        const taskRef = doc(db, "users", currentUserId, "tasks", task.id);
+                        
+                        // Perbarui dokumen di Firestore. onSnapshot akan menangkap perubahan ini.
+                        updateDoc(taskRef, { status: newStatus });
+                    }
+                }
             });
         }
 
@@ -267,7 +299,7 @@
         function updateDisplay() {
             const searchLower = currentSearchTerm.toLowerCase();
             const filteredTasks = allTasks.filter(task => {
-                const taskText = task.text.toLowerCase();
+                const taskText = (task.text || '').toLowerCase();
                 const courseText = (task.course || '').toLowerCase();
                 return taskText.includes(searchLower) || courseText.includes(searchLower);
             });
@@ -309,8 +341,6 @@
             e.preventDefault();
             const rawTaskText = taskInput.value.trim();
             const taskText = rawTaskText.charAt(0).toUpperCase() + rawTaskText.slice(1);
-            const taskId = taskIdInput.value;
-
             if (!taskText || !currentUserId) return;
 
             const taskData = {
@@ -333,7 +363,6 @@
         // --- Fungsi untuk masuk ke mode edit ---
         function enterEditMode(task) {
             editingTaskId = task.id;
-            taskIdInput.value = task.id;
             taskInput.value = task.text;
             deadlineInput.value = task.deadline || '';
             courseSelect.value = task.course || '';
@@ -375,7 +404,14 @@
                 const deadlineDate = new Date(data.deadline);
                 deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
                 const formattedDeadline = deadlineDate.toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-                deadlineHTML = `<span class="deadline-text font-medium text-red-500 dark:text-red-400">Tenggat: ${formattedDeadline}</span>`;
+                
+                // Tambahkan style jika sudah lewat tenggat
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const deadlineIsPast = deadlineDate < today;
+                const deadlineColor = deadlineIsPast && !isCompleted ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400';
+
+                deadlineHTML = `<span class="deadline-text font-medium ${deadlineColor}">Tenggat: ${formattedDeadline}</span>`;
             }
 
             const publicIcon = data.isPublic
@@ -390,7 +426,7 @@
             } else if (currentStatus === 'completed_private') {
                 statusIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
                 statusTitle = 'Selesai (Pribadi)';
-            } else { // active
+            } else {
                 statusIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10"></circle></svg>`;
                 statusTitle = 'Tandai Selesai';
             }
