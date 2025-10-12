@@ -91,9 +91,12 @@
                 </div>
             </form>
 
-            <div class="mb-4">
+            <div class="mb-4 relative">
                 <label for="search-input" class="sr-only">Cari Tugas</label>
-                <input type="text" id="search-input" placeholder="Cari berdasarkan nama tugas atau mata kuliah..." class="custom-placeholder w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg">
+                <input type="text" id="search-input" placeholder="Cari berdasarkan nama tugas atau mata kuliah..." class="custom-placeholder w-full px-10 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg">
+                <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hidden-by-default" title="Hapus pencarian">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
 
             <main>
@@ -192,7 +195,6 @@
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const submitIconAdd = document.getElementById('submit-icon-add');
         const submitIconSave = document.getElementById('submit-icon-save');
-        // --- BARU: Elemen DOM untuk Statistik ---
         const statsTotal = document.getElementById('stats-total');
         const statsPending = document.getElementById('stats-pending');
         const statsCompleted = document.getElementById('stats-completed');
@@ -208,6 +210,9 @@
         const courseList = document.getElementById('course-list');
         const courseSelect = document.getElementById('course-select');
 
+        // --- PERUBAHAN (2/3): Elemen tombol hapus pencarian ---
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+
         // --- Inisialisasi ---
         const setDefaultDate = () => {
             const today = new Date();
@@ -219,10 +224,19 @@
         // --- Event Listeners Utama ---
         loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
         logoutBtn.addEventListener('click', () => signOut(auth));
+        
+        // --- PERUBAHAN (3/3): Event listener untuk tombol dan input pencarian ---
         searchInput.addEventListener('input', (e) => {
             currentSearchTerm = e.target.value;
+            clearSearchBtn.classList.toggle('hidden-by-default', !currentSearchTerm);
             updateDisplay();
         });
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            // Memicu event 'input' secara manual agar tampilan diperbarui
+            searchInput.dispatchEvent(new Event('input'));
+        });
+
         sortSelect.addEventListener('change', (e) => {
             currentSort = e.target.value;
             updateDisplay();
@@ -284,15 +298,12 @@
 
         function checkAndProcessOverdueTasks(tasks) {
             if (!currentUserId) return;
-
             const today = new Date();
             today.setHours(0, 0, 0, 0); 
-
             tasks.forEach(task => {
                 if ((task.status === 'active' || task.status === undefined) && task.deadline) {
                     const deadlineDate = new Date(task.deadline);
                     deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
-
                     if (deadlineDate < today) {
                         const newStatus = task.isPublic ? 'completed_public' : 'completed_private';
                         const taskRef = doc(db, "users", currentUserId, "tasks", task.id);
@@ -302,9 +313,7 @@
             });
         }
 
-        // --- Fungsi Utama untuk Render, Pencarian, dan Urutan ---
         function updateDisplay() {
-            // --- BARU: Kalkulasi dan tampilkan statistik ---
             const totalTasks = allTasks.length;
             const completedTasksCount = allTasks.filter(task => {
                 const status = task.status || (task.isCompleted ? 'completed_private' : 'active');
@@ -315,7 +324,6 @@
             statsTotal.textContent = totalTasks;
             statsPending.textContent = pendingTasksCount;
             statsCompleted.textContent = completedTasksCount;
-            // --- Akhir Fitur Baru ---
 
             const searchLower = currentSearchTerm.toLowerCase();
             const filteredTasks = allTasks.filter(task => {
@@ -356,20 +364,17 @@
             return ascending ? dateA - dateB : dateB - dateA;
         }
 
-        // --- Logika form untuk menangani Tambah dan Edit ---
         taskForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const rawTaskText = taskInput.value.trim();
             const taskText = rawTaskText.charAt(0).toUpperCase() + rawTaskText.slice(1);
             if (!taskText || !currentUserId) return;
-
             const taskData = {
                 text: taskText,
                 isPublic: publicToggle.checked,
                 deadline: deadlineInput.value || null,
                 course: courseSelect.value || null,
             };
-
             if (editingTaskId) {
                 await updateDoc(doc(db, "users", currentUserId, "tasks", editingTaskId), taskData);
             } else {
@@ -386,12 +391,10 @@
             deadlineInput.value = task.deadline || '';
             courseSelect.value = task.course || '';
             publicToggle.checked = task.isPublic || false;
-
             submitTaskText.textContent = 'Simpan Perubahan';
             submitIconAdd.classList.add('hidden-by-default');
             submitIconSave.classList.remove('hidden-by-default');
             cancelEditBtn.classList.remove('hidden-by-default');
-            
             taskInput.focus();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -400,7 +403,6 @@
             editingTaskId = null;
             taskForm.reset();
             setDefaultDate();
-
             submitTaskText.textContent = 'Tambah Tugas';
             submitIconAdd.classList.remove('hidden-by-default');
             submitIconSave.classList.add('hidden-by-default');
@@ -411,10 +413,8 @@
             const li = document.createElement('li');
             li.className = 'task-item flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg shadow-sm';
             li.dataset.id = id;
-            
             const currentStatus = data.status || 'active';
             const isCompleted = currentStatus !== 'active';
-
             const creationDate = data.createdAt ? data.createdAt.toDate() : new Date();
             const formattedTimestamp = `Dibuat: ${creationDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
             let deadlineHTML = '';
@@ -422,19 +422,15 @@
                 const deadlineDate = new Date(data.deadline);
                 deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
                 const formattedDeadline = deadlineDate.toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-                
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const deadlineIsPast = deadlineDate < today;
                 const deadlineColor = deadlineIsPast && !isCompleted ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400';
-
                 deadlineHTML = `<span class="deadline-text font-medium ${deadlineColor}">Tenggat: ${formattedDeadline}</span>`;
             }
-
             const publicIcon = data.isPublic
                 ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
                 : `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
-
             let statusIcon;
             let statusTitle;
             if (currentStatus === 'completed_public') {
@@ -447,7 +443,6 @@
                 statusIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10"></circle></svg>`;
                 statusTitle = 'Tandai Selesai';
             }
-
             li.innerHTML = `
                 <div class="flex items-start gap-3 flex-grow min-w-0">
                     <button class="status-btn p-0 flex-shrink-0" title="${statusTitle}">${statusIcon}</button>
@@ -481,45 +476,31 @@
             const deleteBtn = taskItem.querySelector('.delete-btn');
             const publicToggleBtn = taskItem.querySelector('.public-toggle-btn');
             const editBtn = taskItem.querySelector('.edit-btn');
-
             statusBtn.addEventListener('click', () => {
                 const currentStatus = taskData.status || 'active';
                 let nextStatus;
-                if (currentStatus === 'active') {
-                    nextStatus = 'completed_private';
-                } else if (currentStatus === 'completed_private') {
-                    nextStatus = 'completed_public';
-                } else { 
-                    nextStatus = 'active';
-                }
+                if (currentStatus === 'active') nextStatus = 'completed_private';
+                else if (currentStatus === 'completed_private') nextStatus = 'completed_public';
+                else nextStatus = 'active';
                 updateDoc(doc(db, "users", currentUserId, "tasks", docId), { status: nextStatus });
             });
-
             deleteBtn.addEventListener('click', () => {
                 const taskText = taskItem.querySelector('.task-text').textContent;
-                showCustomConfirm(`Yakin ingin menghapus tugas "${taskText}"?`, () => {
-                    deleteDoc(doc(db, "users", currentUserId, "tasks", docId));
-                });
+                showCustomConfirm(`Yakin ingin menghapus tugas "${taskText}"?`, () => deleteDoc(doc(db, "users", currentUserId, "tasks", docId)));
             });
-
             publicToggleBtn.addEventListener('click', () => {
                 updateDoc(doc(db, "users", currentUserId, "tasks", docId), { isPublic: !taskData.isPublic });
             });
-            
-            editBtn.addEventListener('click', () => {
-                enterEditMode(taskData);
-            });
+            editBtn.addEventListener('click', () => enterEditMode(taskData));
         }
 
-        // --- Logika Mata Kuliah (Tidak Berubah) ---
         manageCoursesBtn.addEventListener('click', () => { courseModal.classList.remove('hidden'); setTimeout(() => { courseModal.classList.add('opacity-100'); courseModalContent.classList.add('scale-100', 'opacity-100'); courseModalContent.classList.remove('scale-95', 'opacity-0'); }, 10); });
         function closeCourseModal() { courseModalContent.classList.remove('scale-100', 'opacity-100'); courseModalContent.classList.add('scale-95', 'opacity-0'); courseModal.classList.remove('opacity-100'); setTimeout(() => { courseModal.classList.add('hidden'); courseForm.reset(); courseIdInput.value = ''; courseSubmitBtn.textContent = 'Tambah'; }, 300); }
         closeCourseModalBtn.addEventListener('click', closeCourseModal);
         courseModal.addEventListener('click', (e) => { if (e.target === courseModal) closeCourseModal(); });
         courseForm.addEventListener('submit', (e) => { e.preventDefault(); const courseName = courseNameInput.value.trim(); const courseId = courseIdInput.value; if (courseName && currentUserId) { if (courseId) { updateDoc(doc(db, "users", currentUserId, "courses", courseId), { name: courseName }); } else { addDoc(collection(db, "users", currentUserId, "courses"), { name: courseName }); } courseForm.reset(); courseIdInput.value = ''; courseSubmitBtn.textContent = 'Tambah'; courseNameInput.focus(); } });
-        function renderCourseToList(id, data) { const li = document.createElement('li'); li.className = 'flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700/60 rounded-md'; li.dataset.id = id; li.innerHTML = `<span class="course-name-text text-gray-800 dark:text-gray-200">${data.name}</span><div class="flex gap-2"><button class="edit-course-btn p-1 text-gray-500 hover:text-blue-500 font-semibold text-sm">Ubah</button><button class="delete-course-btn p-1 text-gray-500 hover:text-red-500 font-semibold text-sm">Hapus</button></div>`; courseList.appendChild(li); li.querySelector('.edit-course-btn').addEventListener('click', () => { courseIdInput.value = id; courseNameInput.value = data.name; courseSubmitBtn.textContent = 'Simpan'; courseNameInput.focus(); }); li.querySelector('.delete-course-btn').addEventListener('click', () => { showCustomConfirm(`Yakin menghapus mata kuliah "${data.name}"?`, () => { deleteDoc(doc(db, "users", currentUserId, "courses", id)); }); }); }
+        function renderCourseToList(id, data) { const li = document.createElement('li'); li.className = 'flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700/60 rounded-md'; li.dataset.id = id; li.innerHTML = `<span class="course-name-text text-gray-800 dark:text-gray-200">${data.name}</span><div class="flex gap-2"><button class="edit-course-btn p-1 text-gray-500 hover:text-blue-500 font-semibold text-sm">Ubah</button><button class="delete-course-btn p-1 text-gray-500 hover:text-red-500 font-semibold text-sm">Hapus</button></div>`; courseList.appendChild(li); li.querySelector('.edit-course-btn').addEventListener('click', () => { courseIdInput.value = id; courseNameInput.value = data.name; courseSubmitBtn.textContent = 'Simpan'; courseNameInput.focus(); }); li.querySelector('.delete-course-btn').addEventListener('click', () => showCustomConfirm(`Yakin menghapus mata kuliah "${data.name}"?`, () => deleteDoc(doc(db, "users", currentUserId, "courses", id)))); }
         function addCourseToSelect(id, data) { const option = document.createElement('option'); option.value = data.name; option.textContent = data.name; courseSelect.appendChild(option); }
-        
         function showCustomConfirm(message, onConfirm) { const oldModal = document.getElementById('custom-confirm-modal'); if (oldModal) oldModal.remove(); const modal = document.createElement('div'); modal.id = 'custom-confirm-modal'; modal.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50'; modal.innerHTML = `<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm text-center transform transition-all scale-95 opacity-0" id="confirm-modal-content"><p class="text-gray-800 dark:text-gray-200 mb-6">${message}</p><div class="flex justify-center gap-4"><button id="confirm-cancel" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 font-semibold">Batal</button><button id="confirm-ok" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold">Hapus</button></div></div>`; document.body.appendChild(modal); setTimeout(() => { document.getElementById('confirm-modal-content').classList.add('scale-100', 'opacity-100'); document.getElementById('confirm-modal-content').classList.remove('scale-95', 'opacity-0'); }, 10); document.getElementById('confirm-ok').onclick = () => { onConfirm(); modal.remove(); }; document.getElementById('confirm-cancel').onclick = () => { modal.remove(); }; }
     </script>
 </body>
