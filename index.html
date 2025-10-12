@@ -46,9 +46,23 @@
                 </div>
             </header>
 
+            <div id="task-stats" class="grid grid-cols-3 gap-4 mb-8 text-center border-t border-b border-gray-200 dark:border-gray-700 py-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Tugas</p>
+                    <p id="stats-total" class="text-2xl font-bold text-blue-600 dark:text-blue-400">0</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum Selesai</p>
+                    <p id="stats-pending" class="text-2xl font-bold text-yellow-500 dark:text-yellow-400">0</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Sudah Selesai</p>
+                    <p id="stats-completed" class="text-2xl font-bold text-green-500 dark:text-green-400">0</p>
+                </div>
+            </div>
+
             <form id="task-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <input type="hidden" id="task-id-input">
-
                 <div class="sm:col-span-2">
                     <label for="task-input" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Nama Tugas</label>
                     <input type="text" id="task-input" placeholder="Contoh: Mengerjakan esai..." class="custom-placeholder w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-transparent focus:border-blue-500 focus:ring-0 rounded-lg transition-all duration-300" required>
@@ -178,6 +192,10 @@
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const submitIconAdd = document.getElementById('submit-icon-add');
         const submitIconSave = document.getElementById('submit-icon-save');
+        // --- BARU: Elemen DOM untuk Statistik ---
+        const statsTotal = document.getElementById('stats-total');
+        const statsPending = document.getElementById('stats-pending');
+        const statsCompleted = document.getElementById('stats-completed');
         
         const manageCoursesBtn = document.getElementById('manage-courses-btn');
         const courseModal = document.getElementById('course-modal');
@@ -257,8 +275,6 @@
                     return { id: doc.id, ...data };
                 });
 
-                // --- *** FITUR BARU: Cek dan proses tugas yang telat *** ---
-                // Dijalankan sebelum data ditampilkan ke pengguna
                 checkAndProcessOverdueTasks(tasksFromDb);
 
                 allTasks = tasksFromDb;
@@ -266,29 +282,20 @@
             });
         }
 
-        // --- *** FUNGSI BARU: Cek tugas yang sudah melewati tenggat *** ---
         function checkAndProcessOverdueTasks(tasks) {
             if (!currentUserId) return;
 
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Set waktu ke awal hari untuk perbandingan tanggal yang akurat
+            today.setHours(0, 0, 0, 0); 
 
             tasks.forEach(task => {
-                // Hanya proses tugas yang statusnya 'aktif' dan punya tenggat waktu
-                if (task.status === 'active' && task.deadline) {
-                    // Buat objek Date dari string 'YYYY-MM-DD'
+                if ((task.status === 'active' || task.status === undefined) && task.deadline) {
                     const deadlineDate = new Date(task.deadline);
-                    // Sesuaikan dengan timezone agar perbandingan akurat
                     deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
 
                     if (deadlineDate < today) {
-                        console.log(`Tugas "${task.text}" telah melewati tenggat. Memperbarui status.`);
-                        
-                        // Tentukan status baru berdasarkan visibilitas tugas
                         const newStatus = task.isPublic ? 'completed_public' : 'completed_private';
                         const taskRef = doc(db, "users", currentUserId, "tasks", task.id);
-                        
-                        // Perbarui dokumen di Firestore. onSnapshot akan menangkap perubahan ini.
                         updateDoc(taskRef, { status: newStatus });
                     }
                 }
@@ -297,6 +304,19 @@
 
         // --- Fungsi Utama untuk Render, Pencarian, dan Urutan ---
         function updateDisplay() {
+            // --- BARU: Kalkulasi dan tampilkan statistik ---
+            const totalTasks = allTasks.length;
+            const completedTasksCount = allTasks.filter(task => {
+                const status = task.status || (task.isCompleted ? 'completed_private' : 'active');
+                return status !== 'active';
+            }).length;
+            const pendingTasksCount = totalTasks - completedTasksCount;
+
+            statsTotal.textContent = totalTasks;
+            statsPending.textContent = pendingTasksCount;
+            statsCompleted.textContent = completedTasksCount;
+            // --- Akhir Fitur Baru ---
+
             const searchLower = currentSearchTerm.toLowerCase();
             const filteredTasks = allTasks.filter(task => {
                 const taskText = (task.text || '').toLowerCase();
@@ -323,8 +343,8 @@
             activeTasks.forEach(task => renderTask(task.id, task));
             completedTasks.forEach(task => renderTask(task.id, task));
 
-            if(activeTasks.length === 0) taskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Tidak ada tugas aktif.</li>`;
-            if(completedTasks.length === 0) completedTaskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada tugas yang selesai.</li>`;
+            if(activeTasks.length === 0 && searchInput.value === '') taskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Tidak ada tugas aktif.</li>`;
+            if(completedTasks.length === 0 && searchInput.value === '') completedTaskList.innerHTML = `<li class="text-center text-gray-500 dark:text-gray-400 py-4">Belum ada tugas yang selesai.</li>`;
         }
         
         function sortDeadlines(a, b, ascending = true) {
@@ -360,7 +380,6 @@
             cancelEditMode(); 
         });
 
-        // --- Fungsi untuk masuk ke mode edit ---
         function enterEditMode(task) {
             editingTaskId = task.id;
             taskInput.value = task.text;
@@ -377,7 +396,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- Fungsi untuk keluar dari mode edit ---
         function cancelEditMode() {
             editingTaskId = null;
             taskForm.reset();
@@ -405,7 +423,6 @@
                 deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
                 const formattedDeadline = deadlineDate.toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
                 
-                // Tambahkan style jika sudah lewat tenggat
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const deadlineIsPast = deadlineDate < today;
@@ -503,7 +520,6 @@
         function renderCourseToList(id, data) { const li = document.createElement('li'); li.className = 'flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700/60 rounded-md'; li.dataset.id = id; li.innerHTML = `<span class="course-name-text text-gray-800 dark:text-gray-200">${data.name}</span><div class="flex gap-2"><button class="edit-course-btn p-1 text-gray-500 hover:text-blue-500 font-semibold text-sm">Ubah</button><button class="delete-course-btn p-1 text-gray-500 hover:text-red-500 font-semibold text-sm">Hapus</button></div>`; courseList.appendChild(li); li.querySelector('.edit-course-btn').addEventListener('click', () => { courseIdInput.value = id; courseNameInput.value = data.name; courseSubmitBtn.textContent = 'Simpan'; courseNameInput.focus(); }); li.querySelector('.delete-course-btn').addEventListener('click', () => { showCustomConfirm(`Yakin menghapus mata kuliah "${data.name}"?`, () => { deleteDoc(doc(db, "users", currentUserId, "courses", id)); }); }); }
         function addCourseToSelect(id, data) { const option = document.createElement('option'); option.value = data.name; option.textContent = data.name; courseSelect.appendChild(option); }
         
-        // --- Fungsi Utilitas (Tidak Berubah) ---
         function showCustomConfirm(message, onConfirm) { const oldModal = document.getElementById('custom-confirm-modal'); if (oldModal) oldModal.remove(); const modal = document.createElement('div'); modal.id = 'custom-confirm-modal'; modal.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50'; modal.innerHTML = `<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm text-center transform transition-all scale-95 opacity-0" id="confirm-modal-content"><p class="text-gray-800 dark:text-gray-200 mb-6">${message}</p><div class="flex justify-center gap-4"><button id="confirm-cancel" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 font-semibold">Batal</button><button id="confirm-ok" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold">Hapus</button></div></div>`; document.body.appendChild(modal); setTimeout(() => { document.getElementById('confirm-modal-content').classList.add('scale-100', 'opacity-100'); document.getElementById('confirm-modal-content').classList.remove('scale-95', 'opacity-0'); }, 10); document.getElementById('confirm-ok').onclick = () => { onConfirm(); modal.remove(); }; document.getElementById('confirm-cancel').onclick = () => { modal.remove(); }; }
     </script>
 </body>
