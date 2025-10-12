@@ -156,7 +156,6 @@
         let allTasks = []; 
         let currentSort = 'newest';
         let currentSearchTerm = '';
-        // --- BARU: Variabel untuk melacak mode edit ---
         let editingTaskId = null; 
 
         // --- Elemen DOM ---
@@ -173,7 +172,6 @@
         const completedTaskList = document.getElementById('completed-task-list');
         const searchInput = document.getElementById('search-input');
         const sortSelect = document.getElementById('sort-select');
-        // --- BARU: Elemen DOM untuk form edit ---
         const taskIdInput = document.getElementById('task-id-input');
         const submitTaskBtn = document.getElementById('submit-task-btn');
         const submitTaskText = document.getElementById('submit-task-text');
@@ -211,7 +209,6 @@
             currentSort = e.target.value;
             updateDisplay();
         });
-        // --- BARU: Event listener untuk tombol batal edit ---
         cancelEditBtn.addEventListener('click', cancelEditMode);
 
         // --- Logika Autentikasi ---
@@ -250,8 +247,18 @@
 
             const tasksRef = collection(db, "users", userId, "tasks");
             const qTasks = query(tasksRef, orderBy("createdAt", "desc"));
+            
+            // --- *** PERBAIKAN DI SINI *** ---
+            // Memuat Tugas dengan logika untuk migrasi data lama
             unsubscribeTasks = onSnapshot(qTasks, (snapshot) => {
-                allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allTasks = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    // Jika 'status' tidak ada, buat berdasarkan 'isCompleted' lama
+                    if (data.status === undefined && data.isCompleted !== undefined) {
+                        data.status = data.isCompleted ? 'completed_private' : 'active';
+                    }
+                    return { id: doc.id, ...data };
+                });
                 updateDisplay();
             });
         }
@@ -265,7 +272,6 @@
                 return taskText.includes(searchLower) || courseText.includes(searchLower);
             });
             
-            // --- DIUBAH: Logika filter berdasarkan status baru ---
             const defaultStatus = 'active';
             let activeTasks = filteredTasks.filter(task => (task.status || defaultStatus) === 'active');
             let completedTasks = filteredTasks.filter(task => (task.status || defaultStatus) !== 'active');
@@ -298,7 +304,7 @@
             return ascending ? dateA - dateB : dateB - dateA;
         }
 
-        // --- DIUBAH: Logika form untuk menangani Tambah dan Edit ---
+        // --- Logika form untuk menangani Tambah dan Edit ---
         taskForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const rawTaskText = taskInput.value.trim();
@@ -315,18 +321,16 @@
             };
 
             if (editingTaskId) {
-                // Mode Edit: Update dokumen yang ada
                 await updateDoc(doc(db, "users", currentUserId, "tasks", editingTaskId), taskData);
             } else {
-                // Mode Tambah: Buat dokumen baru
                 taskData.createdAt = serverTimestamp();
-                taskData.status = 'active'; // Status default untuk tugas baru
+                taskData.status = 'active'; 
                 await addDoc(collection(db, "users", currentUserId, "tasks"), taskData);
             }
-            cancelEditMode(); // Reset form setelah submit
+            cancelEditMode(); 
         });
 
-        // --- BARU: Fungsi untuk masuk ke mode edit ---
+        // --- Fungsi untuk masuk ke mode edit ---
         function enterEditMode(task) {
             editingTaskId = task.id;
             taskIdInput.value = task.id;
@@ -344,7 +348,7 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- BARU: Fungsi untuk keluar dari mode edit ---
+        // --- Fungsi untuk keluar dari mode edit ---
         function cancelEditMode() {
             editingTaskId = null;
             taskForm.reset();
@@ -356,7 +360,6 @@
             cancelEditBtn.classList.add('hidden-by-default');
         }
         
-        // --- DIUBAH: RenderTask dengan logika status dan tombol edit ---
         function renderTask(id, data) {
             const li = document.createElement('li');
             li.className = 'task-item flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg shadow-sm';
@@ -419,7 +422,6 @@
             addEventListenersToTask(li, data);
         }
         
-        // --- DIUBAH: Event listener dengan logika status dan edit ---
         function addEventListenersToTask(taskItem, taskData) {
             const docId = taskItem.dataset.id;
             const statusBtn = taskItem.querySelector('.status-btn');
@@ -434,7 +436,7 @@
                     nextStatus = 'completed_private';
                 } else if (currentStatus === 'completed_private') {
                     nextStatus = 'completed_public';
-                } else { // completed_public
+                } else { 
                     nextStatus = 'active';
                 }
                 updateDoc(doc(db, "users", currentUserId, "tasks", docId), { status: nextStatus });
@@ -451,7 +453,6 @@
                 updateDoc(doc(db, "users", currentUserId, "tasks", docId), { isPublic: !taskData.isPublic });
             });
             
-            // --- BARU ---
             editBtn.addEventListener('click', () => {
                 enterEditMode(taskData);
             });
