@@ -166,7 +166,6 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // --- Variabel State Global ---
         let currentUserId = null;
         let unsubscribeTasks = null; 
         let unsubscribeCourses = null;
@@ -175,7 +174,6 @@
         let currentSearchTerm = '';
         let editingTaskId = null; 
 
-        // --- Elemen DOM ---
         const loginContainer = document.getElementById('login-container');
         const appContainer = document.getElementById('app-container');
         const loginBtn = document.getElementById('login-btn');
@@ -198,7 +196,7 @@
         const statsTotal = document.getElementById('stats-total');
         const statsPending = document.getElementById('stats-pending');
         const statsCompleted = document.getElementById('stats-completed');
-        
+        const clearSearchBtn = document.getElementById('clear-search-btn');
         const manageCoursesBtn = document.getElementById('manage-courses-btn');
         const courseModal = document.getElementById('course-modal');
         const courseModalContent = document.getElementById('course-modal-content');
@@ -210,10 +208,6 @@
         const courseList = document.getElementById('course-list');
         const courseSelect = document.getElementById('course-select');
 
-        // --- PERUBAHAN (2/3): Elemen tombol hapus pencarian ---
-        const clearSearchBtn = document.getElementById('clear-search-btn');
-
-        // --- Inisialisasi ---
         const setDefaultDate = () => {
             const today = new Date();
             today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
@@ -221,11 +215,9 @@
         };
         setDefaultDate();
 
-        // --- Event Listeners Utama ---
         loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
         logoutBtn.addEventListener('click', () => signOut(auth));
         
-        // --- PERUBAHAN (3/3): Event listener untuk tombol dan input pencarian ---
         searchInput.addEventListener('input', (e) => {
             currentSearchTerm = e.target.value;
             clearSearchBtn.classList.toggle('hidden-by-default', !currentSearchTerm);
@@ -233,7 +225,6 @@
         });
         clearSearchBtn.addEventListener('click', () => {
             searchInput.value = '';
-            // Memicu event 'input' secara manual agar tampilan diperbarui
             searchInput.dispatchEvent(new Event('input'));
         });
 
@@ -243,7 +234,6 @@
         });
         cancelEditBtn.addEventListener('click', cancelEditMode);
 
-        // --- Logika Autentikasi ---
         onAuthStateChanged(auth, user => {
             if (user) {
                 currentUserId = user.uid;
@@ -288,26 +278,39 @@
                     }
                     return { id: doc.id, ...data };
                 });
-
                 checkAndProcessOverdueTasks(tasksFromDb);
-
                 allTasks = tasksFromDb;
                 updateDisplay();
             });
         }
 
+        // --- *** PERUBAHAN LOGIKA DI SINI *** ---
+        // Fungsi ini sekarang akan memeriksa tugas publik yang sudah 'completed_private' juga.
         function checkAndProcessOverdueTasks(tasks) {
             if (!currentUserId) return;
+
             const today = new Date();
             today.setHours(0, 0, 0, 0); 
+
             tasks.forEach(task => {
-                if ((task.status === 'active' || task.status === undefined) && task.deadline) {
-                    const deadlineDate = new Date(task.deadline);
-                    deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
-                    if (deadlineDate < today) {
-                        const newStatus = task.isPublic ? 'completed_public' : 'completed_private';
-                        const taskRef = doc(db, "users", currentUserId, "tasks", task.id);
-                        updateDoc(taskRef, { status: newStatus });
+                if (!task.deadline) return; // Lewati jika tidak ada tenggat
+
+                const deadlineDate = new Date(task.deadline);
+                deadlineDate.setMinutes(deadlineDate.getMinutes() + deadlineDate.getTimezoneOffset());
+
+                // Hanya proses jika tenggat sudah lewat
+                if (deadlineDate < today) {
+                    const currentStatus = task.status || 'active';
+                    const taskRef = doc(db, "users", currentUserId, "tasks", task.id);
+
+                    // KASUS 1: Tugas bersifat publik dan belum 'completed_public'
+                    // Ini akan menangkap tugas yang statusnya 'active' ATAU 'completed_private'
+                    if (task.isPublic && currentStatus !== 'completed_public') {
+                        updateDoc(taskRef, { status: 'completed_public' });
+                    } 
+                    // KASUS 2: Tugas bersifat pribadi dan masih 'active'
+                    else if (!task.isPublic && currentStatus === 'active') {
+                        updateDoc(taskRef, { status: 'completed_private' });
                     }
                 }
             });
