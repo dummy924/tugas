@@ -252,8 +252,9 @@ export default function Sidebar({
             </div>
           )}
         </div>
-
-        {showSemesterModal && (
+      </aside>
+      
+      {showSemesterModal && (
           <SemesterModal
             initialNama={editingSemester?.nama || ''}
             onSubmit={handleSaveSemester}
@@ -283,7 +284,6 @@ export default function Sidebar({
             onCancel={() => setConfirmTarget(null)}
           />
         )}
-      </aside>
     </>
   )
 }
