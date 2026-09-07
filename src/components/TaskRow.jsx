@@ -21,24 +21,26 @@ export default function TaskRow({
     >
       <span className={`w-1.5 self-stretch shrink-0 ${priorityBarColor(task.prioritas)}`} />
 
-      <button
-        onClick={() => (selectMode ? onToggleCheck() : onToggleSelesai())}
-        className="shrink-0 text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-400"
-        title={selectMode ? 'Pilih' : task.selesai ? 'Tandai belum selesai' : 'Tandai selesai'}
-      >
-        {selectMode ? (
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={onToggleCheck}
-            className="w-4 h-4 accent-maroon-600"
-          />
-        ) : task.selesai ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-        ) : (
-          <Circle className="w-5 h-5" />
-        )}
-      </button>
+      {selectMode ? (
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={onToggleCheck}
+          className="w-4 h-4 accent-maroon-600 shrink-0 cursor-pointer"
+        />
+      ) : (
+        <button
+           onClick={onToggleSelesai}
+           className="shrink-0 text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+           title={task.selesai ? 'Tandai belum selesai' : 'Tandai selesai'}
+         >
+           {task.selesai ? (
+             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+           ) : (
+             <Circle className="w-5 h-5" />
+           )}
+         </button>
+       )}
 
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onOpenDetail}>
         <p
