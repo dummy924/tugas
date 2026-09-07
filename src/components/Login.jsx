@@ -5,7 +5,7 @@ export default function Login() {
   const { login, authError } = useAuth()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-zinc-950 px-6">
+    <div className="fixed inset-0 overflow-hidden flex items-center justify-center bg-stone-50 dark:bg-zinc-950 px-6">
       <div className="w-full max-w-sm text-center">
         <div className="mx-auto w-14 h-14 rounded-full bg-maroon-600 flex items-center justify-center mb-6">
           <GraduationCap className="w-7 h-7 text-white" strokeWidth={1.75} />
