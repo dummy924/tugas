@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { LogOut, Plus, CheckSquare, Square, X, Trash2 } from 'lucide-react'
+import { LogOut, Plus, CheckSquare, Square, X, Trash2, Menu } from 'lucide-react'
 import { useAuth } from './context/AuthContext.jsx'
 import { useData } from './context/DataContext.jsx'
 import Login from './components/Login.jsx'
@@ -19,6 +19,7 @@ export default function App() {
 
   const [selectedSemesterId, setSelectedSemesterId] = useState(null)
   const [selectedMkId, setSelectedMkId] = useState('all')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
@@ -120,6 +121,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 md:flex">
       <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         semesters={semesters}
         mataKuliahDiSemester={mataKuliahDiSemester}
         selectedSemesterId={selectedSemesterId}
@@ -129,8 +132,17 @@ export default function App() {
       />
 
       <main className="flex-1 min-w-0">
-        <header className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-zinc-800">
-          <h1 className="font-display text-xl text-stone-900 dark:text-zinc-100">Tugas Kuliah</h1>
+        <header className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-stone-200 dark:border-zinc-800">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden text-stone-500 dark:text-zinc-400 hover:text-stone-800 dark:hover:text-zinc-200"
+              title="Buka menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+              <h1 className="font-display text-xl text-stone-900 dark:text-zinc-100">Tugas Kuliah</h1>
+            </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="flex items-center gap-2 pl-3 border-l border-stone-200 dark:border-zinc-800">
@@ -151,17 +163,21 @@ export default function App() {
           </div>
         </header>
 
-        <div className="p-6 max-w-3xl">
+        <div className="p-6">
           {!selectedSemesterId ? (
-            <EmptyState
-              title="Belum ada semester"
-              description="Tambahkan semester pertamamu lewat panel di samping untuk mulai mencatat tugas."
-            />
+            <div className="max-w-3xl">
+             <EmptyState
+               title="Belum ada semester"
+               description="Tambahkan semester pertamamu lewat panel di samping untuk mulai mencatat tugas."
+             />
+           </div>
           ) : (
             <>
-              <StatsBar total={tasksFiltered.length} belumSelesai={belumSelesai.length} selesai={selesai.length} />
+              <div className="md:max-w-4xl md:mx-auto">
+                <StatsBar total={tasksFiltered.length} belumSelesai={belumSelesai.length} selesai={selesai.length} />
+              </div>
 
-              <div className="flex flex-wrap items-center gap-2 mb-6">
+              <div className="max-w-3xl flex flex-wrap items-center gap-2 mb-6">
                 <button
                   onClick={() => {
                     setEditingTask(null)
@@ -215,17 +231,21 @@ export default function App() {
               </div>
 
               {mataKuliahDiSemester.length === 0 ? (
-                <EmptyState
-                  title="Belum ada mata kuliah"
-                  description="Tambahkan mata kuliah di semester ini dulu lewat panel di samping, baru kamu bisa menambahkan tugas."
-                />
+                <div className="max-w-3xl">
+                  <EmptyState
+                    title="Belum ada mata kuliah"
+                    description="..."
+                  />
+                </div>
               ) : tasksFiltered.length === 0 ? (
-                <EmptyState
-                  title="Belum ada tugas"
-                  description="Klik tombol Tambah Tugas untuk mencatat tugas pertamamu di sini."
-                />
+                <div className="max-w-3xl">
+                  <EmptyState
+                    title="Belum ada tugas"
+                    description="..."
+                  />
+                </div>
               ) : (
-                <>
+              <div className="md:grid md:grid-cols-2 md:gap-6 md:items-start md:max-w-6xl md:mx-auto">
                   <TaskSection
                     title="Belum Selesai"
                     tasks={belumSelesai}
@@ -258,7 +278,7 @@ export default function App() {
                     onDelete={setDeleteTarget}
                     emptyText="Belum ada tugas yang selesai."
                   />
-                </>
+                </div>
               )}
             </>
           )}
