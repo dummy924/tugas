@@ -63,6 +63,15 @@ export default function TaskRow({
           <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${priorityBadgeClass(task.prioritas)}`}>
             {priorityLabel(task.prioritas)}
           </span>
+          {task.selesai && task.buktiPenyelesaian && (
+            <span
+              className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
+              title="Ada bukti penyelesaian"
+            >
+              <FileCheck className="w-3 h-3" />
+              Ada bukti
+            </span>
+          )}
         </div>
       </div>
 
