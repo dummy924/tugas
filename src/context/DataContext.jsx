@@ -155,6 +155,7 @@ export function DataProvider({ children }) {
       prioritas: prioritas || 'sedang',
       deadline: deadline || '',
       selesai: false,
+      buktiPenyelesaian: '',
       createdAt: serverTimestamp(),
     })
   }
