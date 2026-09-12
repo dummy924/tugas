@@ -81,6 +81,14 @@ export default function App() {
 
   if (!currentUser) return <Login />
 
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-zinc-950">
+        <p className="text-stone-400 dark:text-zinc-500 text-sm">Memuat data tugas kamu...</p>
+      </div>
+    )
+  }
+
   const toggleCheck = (id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
