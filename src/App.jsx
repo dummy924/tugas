@@ -71,6 +71,20 @@ export default function App() {
     setSelectMode(false)
   }, [selectedSemesterId, selectedMkId])
 
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev
+      const validIds = new Set(tugas.map((t) => t.id))
+      let changed = false
+      const next = new Set()
+      prev.forEach((id) => {
+        if (validIds.has(id)) next.add(id)
+        else changed = true
+      })
+      return changed ? next : prev
+    })
+  }, [tugas])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-zinc-950">
