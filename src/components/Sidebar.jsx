@@ -142,7 +142,11 @@ export default function Sidebar({
                     >
                       {s.nama}
                     </span>
-                    <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+                    <div
+                       className={`items-center gap-0.5 shrink-0 ${
+                         active ? 'flex' : 'hidden group-hover:flex'
+                       }`}
+                     >
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -222,7 +226,11 @@ export default function Sidebar({
                       onClick={() => handleSelectMk(mk.id)}
                     >
                       <span className="text-sm truncate">{mk.nama}</span>
-                      <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+                      <div
+                         className={`items-center gap-0.5 shrink-0 ${
+                           active ? 'flex' : 'hidden group-hover:flex'
+                         }`}
+                       >
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
