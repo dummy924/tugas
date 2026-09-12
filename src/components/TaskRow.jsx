@@ -42,7 +42,10 @@ export default function TaskRow({
          </button>
        )}
 
-      <div className="flex-1 min-w-0 cursor-pointer" onClick={onOpenDetail}>
+      <div
+         className="flex-1 min-w-0 cursor-pointer"
+         onClick={selectMode ? onToggleCheck : onOpenDetail}
+       >
         <p
           className={`text-sm font-medium text-stone-900 dark:text-zinc-100 truncate ${
             task.selesai ? 'line-through opacity-60' : ''
