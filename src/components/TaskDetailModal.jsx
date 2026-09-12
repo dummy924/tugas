@@ -2,7 +2,7 @@ import { CheckCircle2, Circle, Pencil, Trash2, X } from 'lucide-react'
 import { formatDeadline, isOverdue } from '../utils/date.js'
 import { priorityBadgeClass, priorityLabel } from '../utils/priority.js'
 
-export default function TaskDetailModal({ task, mkNama, onClose, onEdit, onDelete, onToggleSelesai }) {
+export default function TaskDetailModal({ task, mkNama, onClose, onEdit, onDelete, onToggleSelesai, onEditProof }) {
   const overdue = isOverdue(task.deadline, task.selesai)
 
   return (
@@ -54,6 +54,27 @@ export default function TaskDetailModal({ task, mkNama, onClose, onEdit, onDelet
           </p>
         ) : (
           <p className="text-sm text-stone-400 dark:text-zinc-500 italic mb-6">Tidak ada deskripsi.</p>
+        )}
+
+        {task.selesai && (
+          <div className="rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/10 p-3 mb-6">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
+                Bukti Penyelesaian
+              </span>
+              {onEditProof && (
+                <button
+                  onClick={onEditProof}
+                  className="text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
+                >
+                  Ubah Bukti
+                </button>
+              )}
+            </div>
+            <p className="text-sm text-stone-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+              {task.buktiPenyelesaian || <span className="italic text-stone-400">Belum ada bukti.</span>}
+            </p>
+          </div>
         )}
 
         <div className="flex flex-wrap items-center gap-2">
