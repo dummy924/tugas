@@ -165,10 +165,18 @@ export function DataProvider({ children }) {
     await updateDoc(doc(db, 'users', uid, 'tugas', id), data)
   }
 
-  const toggleSelesai = async (id, current) => {
-    if (!uid) return
-    await updateDoc(doc(db, 'users', uid, 'tugas', id), { selesai: !current })
-  }
+  const markSelesai = async (id, buktiPenyelesaian) => {
+     if (!uid) return
+     await updateDoc(doc(db, 'users', uid, 'tugas', id), {
+       selesai: true,
+       buktiPenyelesaian: buktiPenyelesaian || '',
+     })
+   }
+
+   const markBelumSelesai = async (id) => {
+     if (!uid) return
+     await updateDoc(doc(db, 'users', uid, 'tugas', id), { selesai: false })
+   }
 
   const deleteTugas = async (id) => {
     if (!uid) return
@@ -195,7 +203,8 @@ export function DataProvider({ children }) {
     deleteMataKuliah,
     addTugas,
     updateTugas,
-    toggleSelesai,
+    markSelesai,
+    markBelumSelesai,
     deleteTugas,
     deleteMultipleTugas,
   }
