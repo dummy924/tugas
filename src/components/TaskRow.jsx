@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Pencil, Trash2 } from 'lucide-react'
+import { CheckCircle2, Circle, FileCheck, Pencil, Trash2 } from 'lucide-react'
 import { deadlineLabel, isOverdue } from '../utils/date.js'
 import { priorityBarColor, priorityBadgeClass, priorityLabel } from '../utils/priority.js'
 
