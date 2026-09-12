@@ -4,7 +4,7 @@ import { priorityBadgeClass, priorityLabel } from '../utils/priority.js'
 
 export default function TaskDetailModal({ task, mkNama, onClose, onEdit, onDelete, onToggleSelesai, onEditProof }) {
   const overdue = isOverdue(task.deadline, task.selesai)
-
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-md rounded-xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 p-6 shadow-xl max-h-[90vh] overflow-y-auto">
