@@ -9,12 +9,13 @@ import StatsBar from './components/StatsBar.jsx'
 import TaskSection from './components/TaskSection.jsx'
 import TaskFormModal from './components/TaskFormModal.jsx'
 import TaskDetailModal from './components/TaskDetailModal.jsx'
+import CompletionProofModal from './components/CompletionProofModal.jsx'
 import ConfirmDialog from './components/ConfirmDialog.jsx'
 import EmptyState from './components/EmptyState.jsx'
 
 export default function App() {
   const { currentUser, loading, logout } = useAuth()
-  const { semesters, mataKuliah, tugas, dataLoading, addTugas, updateTugas, deleteTugas, deleteMultipleTugas, toggleSelesai } =
+  const { semesters, mataKuliah, tugas, dataLoading, addTugas, updateTugas, deleteTugas, deleteMultipleTugas, markSelesai, markBelumSelesai } =
     useData()
 
   const [selectedSemesterId, setSelectedSemesterId] = useState(null)
@@ -25,6 +26,7 @@ export default function App() {
   const [editingTask, setEditingTask] = useState(null)
   const [detailTask, setDetailTask] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [completingTask, setCompletingTask] = useState(null)
 
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())
@@ -117,6 +119,20 @@ export default function App() {
   }
 
   const mkNamaById = (mkId) => mataKuliah.find((m) => m.id === mkId)?.nama || 'Tanpa mata kuliah'
+  
+  const handleRequestToggleSelesai = (task) => {
+    if (task.selesai) {
+      markBelumSelesai(task.id)
+    } else {
+      setCompletingTask(task)
+    }
+  }
+ 
+  const handleSubmitProof = async (buktiText) => {
+    if (!completingTask) return
+    await markSelesai(completingTask.id, buktiText)
+    setCompletingTask(null)
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 md:flex">
@@ -254,7 +270,7 @@ export default function App() {
                     selectedIds={selectedIds}
                     onToggleCheck={toggleCheck}
                     onOpenDetail={setDetailTask}
-                    onToggleSelesai={(t) => toggleSelesai(t.id, t.selesai)}
+                    onToggleSelesai={(t) => handleRequestToggleSelesai(t)}
                     onEdit={(t) => {
                       setEditingTask(t)
                       setShowTaskForm(true)
@@ -270,7 +286,7 @@ export default function App() {
                     selectedIds={selectedIds}
                     onToggleCheck={toggleCheck}
                     onOpenDetail={setDetailTask}
-                    onToggleSelesai={(t) => toggleSelesai(t.id, t.selesai)}
+                    onToggleSelesai={(t) => handleRequestToggleSelesai(t)}
                     onEdit={(t) => {
                       setEditingTask(t)
                       setShowTaskForm(true)
@@ -310,9 +326,27 @@ export default function App() {
           }}
           onDelete={() => setDeleteTarget(detailTask)}
           onToggleSelesai={() => {
-            toggleSelesai(detailTask.id, detailTask.selesai)
-            setDetailTask({ ...detailTask, selesai: !detailTask.selesai })
+            if (detailTask.selesai) {
+              markBelumSelesai(detailTask.id)
+              setDetailTask({ ...detailTask, selesai: false })
+            } else {
+              setCompletingTask(detailTask)
+              setDetailTask(null)
+            }
           }}
+          onEditProof={() => {
+            setCompletingTask(detailTask)
+            setDetailTask(null)
+          }}
+        />
+      )}
+
+      {completingTask && (
+        <CompletionProofModal
+          taskTitle={completingTask.judul}
+          initialValue={completingTask.buktiPenyelesaian || ''}
+          onSubmit={handleSubmitProof}
+          onClose={() => setCompletingTask(null)}
         />
       )}
 
