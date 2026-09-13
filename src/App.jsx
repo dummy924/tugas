@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { LogOut, Plus, CheckSquare, Square, X, Trash2, Menu } from 'lucide-react'
+import { LogOut, Plus, CheckSquare, Square, X, Trash2, Menu, Search } from 'lucide-react'
 import { useAuth } from './context/AuthContext.jsx'
 import { useData } from './context/DataContext.jsx'
+import { SORT_OPTIONS, sortTasks } from './utils/sort.js'
 import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
@@ -32,6 +33,9 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState('deadline-dekat')
+
   // Auto-pilih semester pertama begitu data termuat
   useEffect(() => {
     if (!selectedSemesterId && semesters.length > 0) {
@@ -53,37 +57,42 @@ export default function App() {
     })
   }, [tugas, mataKuliah, selectedSemesterId, selectedMkId])
 
-  const belumSelesai = useMemo(() => {
-    return tasksFiltered
-      .filter((t) => !t.selesai)
-      .sort((a, b) => {
-        if (!a.deadline) return 1
-        if (!b.deadline) return -1
-        return a.deadline.localeCompare(b.deadline)
-      })
-  }, [tasksFiltered])
-
-  const selesai = useMemo(() => tasksFiltered.filter((t) => t.selesai), [tasksFiltered])
+  const tasksSearched = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return tasksFiltered
+    return tasksFiltered.filter((t) => t.judul.toLowerCase().includes(q))
+  }, [tasksFiltered, searchQuery])
+ 
+  const belumSelesai = useMemo(
+    () => sortTasks(tasksSearched.filter((t) => !t.selesai), sortBy),
+    [tasksSearched, sortBy]
+  )
+ 
+  const selesai = useMemo(
+    () => sortTasks(tasksSearched.filter((t) => t.selesai), sortBy),
+    [tasksSearched, sortBy]
+  )
 
   // Reset seleksi saat filter berubah
   useEffect(() => {
     setSelectedIds(new Set())
     setSelectMode(false)
+    setSearchQuery('')
   }, [selectedSemesterId, selectedMkId])
 
   useEffect(() => {
     setSelectedIds((prev) => {
       if (prev.size === 0) return prev
-      const validIds = new Set(tugas.map((t) => t.id))
+      const visibleIds = new Set(tasksSearched.map((t) => t.id))
       let changed = false
       const next = new Set()
       prev.forEach((id) => {
-        if (validIds.has(id)) next.add(id)
+        if (visibleIds.has(id)) next.add(id)
         else changed = true
       })
       return changed ? next : prev
     })
-  }, [tugas])
+  }, [tasksSearched])
 
   if (loading) {
     return (
@@ -266,20 +275,60 @@ export default function App() {
                     </button>
                   </>
                 )}
+
+                <div className="relative flex-1 min-w-[160px]">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-zinc-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari judul tugas..."
+                    className="w-full rounded-lg border border-stone-300 dark:border-zinc-700 bg-transparent pl-9 pr-8 py-2 text-sm text-stone-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-maroon-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-zinc-200"
+                      title="Bersihkan pencarian"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+ 
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="rounded-lg border border-stone-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm text-stone-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-maroon-500"
+                  title="Urutkan tugas"
+               >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value} className="dark:bg-zinc-900">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {mataKuliahDiSemester.length === 0 ? (
                 <div className="max-w-3xl">
                   <EmptyState
                     title="Belum ada mata kuliah"
-                    description="..."
+                    description="Tambahkan mata kuliah di semester ini dulu lewat panel di samping, baru kamu bisa menambahkan tugas."
                   />
                 </div>
               ) : tasksFiltered.length === 0 ? (
                 <div className="max-w-3xl">
                   <EmptyState
                     title="Belum ada tugas"
-                    description="..."
+                    description="Klik tombol Tambah Tugas untuk mencatat tugas pertamamu di sini."
+                  />
+                </div>
+              ) : tasksSearched.length === 0 ? (
+                <div className="max-w-3xl">
+                  <EmptyState
+                    title="Tidak ditemukan"
+                    description={`Tidak ada tugas dengan judul yang cocok dengan "${searchQuery}". Coba kata kunci lain.`}
                   />
                 </div>
               ) : (
@@ -298,7 +347,11 @@ export default function App() {
                       setShowTaskForm(true)
                     }}
                     onDelete={setDeleteTarget}
-                    emptyText="Tidak ada tugas yang tersisa di sini. Kerja bagus!"
+                    emptyText={
+                      searchQuery
+                        ? 'Tidak ada tugas yang belum selesai cocok dengan pencarian ini.'
+                        : 'Tidak ada tugas yang tersisa di sini. Kerja bagus!'
+                    }
                   />
                   <TaskSection
                     title="Selesai"
@@ -314,7 +367,11 @@ export default function App() {
                       setShowTaskForm(true)
                     }}
                     onDelete={setDeleteTarget}
-                    emptyText="Belum ada tugas yang selesai."
+                    emptyText={
+                      searchQuery
+                        ? 'Tidak ada tugas selesai yang cocok dengan pencarian ini.'
+                        : 'Belum ada tugas yang selesai.'
+                    }
                   />
                 </div>
               )}
