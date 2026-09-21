@@ -1,13 +1,57 @@
-export const SORT_OPTIONS = [
-  { value: 'deadline-dekat', label: 'Deadline: Terdekat' },
-  { value: 'deadline-jauh', label: 'Deadline: Terjauh' },
-  { value: 'nama-az', label: 'Nama: A-Z' },
-  { value: 'nama-za', label: 'Nama: Z-A' },
-  { value: 'tanggal-terbaru', label: 'Ditambahkan: Terbaru Dulu' },
-  { value: 'tanggal-terlama', label: 'Ditambahkan: Terlama Dulu' },
-  { value: 'prioritas-tinggi', label: 'Prioritas: Tinggi ke Rendah' },
-  { value: 'prioritas-rendah', label: 'Prioritas: Rendah ke Tinggi' },
+// Setiap kategori punya 2 arah yang saling eksklusif (tidak boleh aktif berbarengan
+// dalam kategori yang sama). Tapi across kategori berbeda, boleh aktif lebih dari satu
+// sekaligus (multi-level sort: kriteria yang dipilih lebih dulu jadi prioritas utama,
+// yang berikutnya jadi penentu urutan kalau kriteria sebelumnya sama nilainya).
+export const SORT_CATEGORIES = [
+  {
+    category: 'deadline',
+    label: 'Deadline',
+    options: [
+      { value: 'deadline-dekat', label: 'Terdekat' },
+      { value: 'deadline-jauh', label: 'Terjauh' },
+    ],
+  },
+  {
+    category: 'prioritas',
+    label: 'Prioritas',
+    options: [
+      { value: 'prioritas-tinggi', label: 'Tinggi ke Rendah' },
+      { value: 'prioritas-rendah', label: 'Rendah ke Tinggi' },
+    ],
+  },
+  {
+    category: 'nama',
+    label: 'Nama',
+    options: [
+      { value: 'nama-az', label: 'A-Z' },
+      { value: 'nama-za', label: 'Z-A' },
+    ],
+  },
+  {
+    category: 'tanggal',
+    label: 'Ditambahkan',
+    options: [
+      { value: 'tanggal-terlama', label: 'Terlama Dulu' },
+      { value: 'tanggal-terbaru', label: 'Terbaru Dulu' },
+    ],
+  },
 ]
+
+// Peta value -> kategori, dipakai untuk mendeteksi tabrakan kategori saat toggle.
+export const CATEGORY_OF = SORT_CATEGORIES.reduce((acc, cat) => {
+  cat.options.forEach((opt) => {
+    acc[opt.value] = cat.category
+  })
+  return acc
+}, {})
+
+// Peta value -> label, dipakai untuk menampilkan ringkasan urutan aktif.
+export const LABEL_OF = SORT_CATEGORIES.reduce((acc, cat) => {
+  cat.options.forEach((opt) => {
+    acc[opt.value] = `${cat.label}: ${opt.label}`
+  })
+  return acc
+}, {})
 
 const PRIORITY_WEIGHT = { tinggi: 3, sedang: 2, rendah: 1 }
 
@@ -28,34 +72,36 @@ function compareDeadlineAsc(a, b) {
 }
 
 function compareDeadlineDesc(a, b) {
-  // Sengaja TIDAK sekadar membalik argumen compareDeadlineAsc(b, a) — cara itu
-  // ternyata membuat tugas tanpa deadline malah pindah ke paling depan, padahal
-  // aturannya harus tetap di paling akhir di kedua arah urutan.
+  // Sengaja bukan sekadar membalik argumen compareDeadlineAsc(b, a) — itu bikin tugas
+  // tanpa deadline malah pindah ke depan, padahal harus tetap di akhir di kedua arah.
   if (!a.deadline && !b.deadline) return 0
   if (!a.deadline) return 1
   if (!b.deadline) return -1
   return b.deadline.localeCompare(a.deadline)
 }
 
-export function sortTasks(tasks, sortBy) {
+const COMPARATORS = {
+  'nama-az': (a, b) => a.judul.localeCompare(b.judul, 'id', { sensitivity: 'base' }),
+  'nama-za': (a, b) => b.judul.localeCompare(a.judul, 'id', { sensitivity: 'base' }),
+  'tanggal-terlama': (a, b) => createdAtMillis(a) - createdAtMillis(b),
+  'tanggal-terbaru': (a, b) => createdAtMillis(b) - createdAtMillis(a),
+  'deadline-dekat': compareDeadlineAsc,
+  'deadline-jauh': compareDeadlineDesc,
+  'prioritas-tinggi': (a, b) => (PRIORITY_WEIGHT[b.prioritas] || 2) - (PRIORITY_WEIGHT[a.prioritas] || 2),
+  'prioritas-rendah': (a, b) => (PRIORITY_WEIGHT[a.prioritas] || 2) - (PRIORITY_WEIGHT[b.prioritas] || 2),
+}
+
+// sortKeys: array berurutan sesuai prioritas, mis. ['deadline-dekat', 'prioritas-tinggi']
+// artinya urutkan berdasarkan deadline dulu, kalau deadline-nya sama baru dibedakan lewat prioritas.
+export function sortTasksMulti(tasks, sortKeys) {
+  const keys = sortKeys && sortKeys.length > 0 ? sortKeys : ['deadline-dekat']
   const arr = [...tasks]
-  switch (sortBy) {
-    case 'nama-az':
-      return arr.sort((a, b) => a.judul.localeCompare(b.judul, 'id', { sensitivity: 'base' }))
-    case 'nama-za':
-      return arr.sort((a, b) => b.judul.localeCompare(a.judul, 'id', { sensitivity: 'base' }))
-    case 'tanggal-terlama':
-      return arr.sort((a, b) => createdAtMillis(a) - createdAtMillis(b))
-    case 'tanggal-terbaru':
-      return arr.sort((a, b) => createdAtMillis(b) - createdAtMillis(a))
-    case 'deadline-jauh':
-      return arr.sort(compareDeadlineDesc)
-    case 'prioritas-rendah':
-      return arr.sort((a, b) => (PRIORITY_WEIGHT[a.prioritas] || 2) - (PRIORITY_WEIGHT[b.prioritas] || 2))
-    case 'prioritas-tinggi':
-      return arr.sort((a, b) => (PRIORITY_WEIGHT[b.prioritas] || 2) - (PRIORITY_WEIGHT[a.prioritas] || 2))
-    case 'deadline-dekat':
-    default:
-      return arr.sort(compareDeadlineAsc)
-  }
+  arr.sort((a, b) => {
+    for (const key of keys) {
+      const cmp = COMPARATORS[key] ? COMPARATORS[key](a, b) : 0
+      if (cmp !== 0) return cmp
+    }
+    return 0
+  })
+  return arr
 }
