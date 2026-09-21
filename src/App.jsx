@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { LogOut, Plus, CheckSquare, Square, X, Trash2, Menu, Search } from 'lucide-react'
 import { useAuth } from './context/AuthContext.jsx'
 import { useData } from './context/DataContext.jsx'
-import { SORT_OPTIONS, sortTasks } from './utils/sort.js'
+import { SORT_CATEGORIES, CATEGORY_OF, LABEL_OF, sortTasksMulti } from './utils/sort.js'
+import { formatDeadline } from './utils/date.js'
 import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
@@ -34,8 +35,26 @@ export default function App() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState('deadline-dekat')
-
+  const [activeSorts, setActiveSorts] = useState(['deadline-dekat'])
+ 
+  // Klik kriteria urutan: kalau kategorinya belum ada yang aktif -> tambahkan.
+  // Kalau kategorinya sudah aktif dengan arah lain -> ganti arahnya (posisi prioritas tetap).
+  // Kalau yang diklik itu sendiri yang sedang aktif -> matikan (kecuali dia satu-satunya yang aktif).
+   const toggleSort = (value) => {
+    setActiveSorts((prev) => {
+      const category = CATEGORY_OF[value]
+      const idx = prev.findIndex((v) => CATEGORY_OF[v] === category)
+      if (idx === -1) return [...prev, value]
+      if (prev[idx] === value) {
+        if (prev.length === 1) return prev
+        return prev.filter((_, i) => i !== idx)
+      }
+      const next = [...prev]
+      next[idx] = value
+      return next
+    })
+  }
+  
   // Auto-pilih semester pertama begitu data termuat
   useEffect(() => {
     if (!selectedSemesterId && semesters.length > 0) {
@@ -60,17 +79,26 @@ export default function App() {
   const tasksSearched = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return tasksFiltered
-    return tasksFiltered.filter((t) => t.judul.toLowerCase().includes(q))
-  }, [tasksFiltered, searchQuery])
+    return tasksFiltered.filter((t) => {
+      const mkNama = mataKuliah.find((m) => m.id === t.mkId)?.nama || ''
+      const deadlineTampilan = t.deadline ? formatDeadline(t.deadline) : ''
+      return (
+        t.judul.toLowerCase().includes(q) ||
+        mkNama.toLowerCase().includes(q) ||
+        t.deadline.toLowerCase().includes(q) ||
+        deadlineTampilan.toLowerCase().includes(q)
+      )
+    })
+  }, [tasksFiltered, searchQuery, mataKuliah])
  
   const belumSelesai = useMemo(
-    () => sortTasks(tasksSearched.filter((t) => !t.selesai), sortBy),
-    [tasksSearched, sortBy]
+    () => sortTasksMulti(tasksSearched.filter((t) => !t.selesai), activeSorts),
+    [tasksSearched, activeSorts]
   )
  
   const selesai = useMemo(
-    () => sortTasks(tasksSearched.filter((t) => t.selesai), sortBy),
-    [tasksSearched, sortBy]
+    () => sortTasksMulti(tasksSearched.filter((t) => t.selesai), activeSorts),
++   [tasksSearched, activeSorts]
   )
 
   // Reset seleksi saat filter berubah
@@ -296,19 +324,37 @@ export default function App() {
                   )}
                 </div>
  
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-stone-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm text-stone-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-maroon-500"
-                  title="Urutkan tugas"
-               >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value} className="dark:bg-zinc-900">
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="max-w-3xl flex flex-wrap items-center gap-x-4 gap-y-2 mb-2">
+                {SORT_CATEGORIES.map((cat) => (
+                  <div key={cat.category} className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-stone-400 dark:text-zinc-500 uppercase tracking-wide">
+                      {cat.label}
+                    </span>
+                    <div className="flex gap-1">
+                      {cat.options.map((opt) => {
+                        const isActive = activeSorts.includes(opt.value)
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={() => toggleSort(opt.value)}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                              isActive
+                                ? 'bg-maroon-600 border-maroon-600 text-white'
+                                : 'border-stone-300 dark:border-zinc-700 text-stone-600 dark:text-zinc-400 hover:bg-stone-100 dark:hover:bg-zinc-800'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              <p className="max-w-3xl text-xs text-stone-400 dark:text-zinc-500 mb-6">
+                Diurutkan berdasarkan: {activeSorts.map((v) => LABEL_OF[v]).join(' → ')}
+              </p>
 
               {mataKuliahDiSemester.length === 0 ? (
                 <div className="max-w-3xl">
