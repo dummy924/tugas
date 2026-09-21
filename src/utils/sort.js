@@ -1,7 +1,3 @@
-// Setiap kategori punya 2 arah yang saling eksklusif (tidak boleh aktif berbarengan
-// dalam kategori yang sama). Tapi across kategori berbeda, boleh aktif lebih dari satu
-// sekaligus (multi-level sort: kriteria yang dipilih lebih dulu jadi prioritas utama,
-// yang berikutnya jadi penentu urutan kalau kriteria sebelumnya sama nilainya).
 export const SORT_CATEGORIES = [
   {
     category: 'deadline',
